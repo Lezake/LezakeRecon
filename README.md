@@ -4,8 +4,8 @@
 
 Como usar:
 
-chmod +x zakefinder.sh
-./zakefinder.sh
+chmod +x zakefinder.sh | ./zakefinder.sh
+
 -----------------------
 Tokens Necessários:
 
@@ -34,6 +34,7 @@ Crie uma conta em: https://chaos.projectdiscovery.io/
 Vá até o dashboard e gere uma API key
 
 Cole no script quando solicitado
+
 -----------------------
 Ferramentas Utilizadas
 
@@ -46,6 +47,7 @@ findomain
 github-subdomains
 
 Obs: jogue todos em /usr/local/bin
+
 -----------------------
 Personalização dos Parâmetros:
 
