@@ -2,9 +2,9 @@
 clear
 
 # === Versão atual do script ===
-SCRIPT_VERSION="1.3"
+SCRIPT_VERSION="1.4"
 
-# === Verificação de atualização por versão.txt ===
+# === Verificação de atualização por version.txt ===
 verificar_versao_remota() {
   remote_version=$(curl -s https://raw.githubusercontent.com/Lezake/ZakeFinder/main/version.txt)
 
@@ -72,8 +72,7 @@ read -p $'\e[1;36m[?] Digite o domínio alvo: \e[0m' alvo
 
 # === GitHub Token ===
 validar_github_token() {
-  status=$(curl -s -o /dev/null -w "%{http_code}" \
-    -H "Authorization: token $1" https://api.github.com/user)
+  status=$(curl -s -o /dev/null -w "%{http_code}"     -H "Authorization: token $1" https://api.github.com/user)
   [[ $status == "200" ]]
 }
 
@@ -92,13 +91,13 @@ while true; do
     break
   else
     echo -e "\e[1;31m[❌] Token inválido.\e[0m"
+    rm -f "$GITHUB_TOKEN_FILE"
   fi
 done
 
 # === Chaos API Key ===
 validar_chaos_token() {
-  code=$(curl -s -o /dev/null -w "%{http_code}" \
-    -H "Authorization: $1" "https://dns.projectdiscovery.io/dns/$alvo/subdomains")
+  code=$(curl -s -o /dev/null -w "%{http_code}"     -H "Authorization: $1" "https://dns.projectdiscovery.io/dns/$alvo/subdomains")
   [[ $code == "200" ]]
 }
 
@@ -118,6 +117,7 @@ while true; do
     break
   else
     echo -e "\e[1;31m[❌] Chaos key inválida.\e[0m"
+    rm -f "$PDCP_API_KEY_FILE"
   fi
 done
 
