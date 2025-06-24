@@ -129,7 +129,7 @@ executar_com_animacao "findomain -t \"$alvo\" -q -u findomain1" "Findomain"
 executar_com_animacao "github-subdomains -d \"$alvo\" -t \"$ghtoken\" -o github1" "GitHub Subdomains"
 
 # === Junta os resultados ===
-echo -e "\e[1;36m[🧪] Juntando resultados...\e[0m"
+echo -e "\e[1;34m[🧪] Juntando resultados...\e[0m"
 > todos.tmp
 for f in subfinder1 chaos1 assetfinder1 findomain1 github1; do
   [ -f "$f" ] && cat "$f" >> todos.tmp
