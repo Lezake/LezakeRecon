@@ -6,7 +6,7 @@ SCRIPT_VERSION="1.5"
 
 # === Verificação de atualização por version.txt ===
 verificar_versao_remota() {
-  remote_version=$(curl -s https://raw.githubusercontent.com/Lezake/ZakeFinder/main/version.txt)
+  remote_version=$(curl -s https://raw.githubusercontent.com/Lezake/ZakeFinder/refs/heads/main/version.txt)
 
   if [[ -z "$remote_version" ]]; then
     echo -e "\e[1;33m[!] Não foi possível verificar a versão mais recente.\e[0m"
