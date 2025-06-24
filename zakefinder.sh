@@ -1,24 +1,24 @@
 #!/bin/bash
 clear
 
-# === Hash da versão atual do script ===
-SCRIPT_VERSION_HASH="a77d1069e5f9713320b5c602d68036e26e0da293"
+# === Versão atual do script ===
+SCRIPT_VERSION="1.3"
 
-# === Verificação de atualização por hash ===
-verificar_atualizacao() {
-  remote_hash=$(curl -s https://api.github.com/repos/Lezake/ZakeFinder/commits/main | grep '"sha"' | head -n 1 | cut -d '"' -f4)
+# === Verificação de atualização por versão.txt ===
+verificar_versao_remota() {
+  remote_version=$(curl -s https://raw.githubusercontent.com/Lezake/ZakeFinder/main/version.txt)
 
-  if [[ -z "$remote_hash" ]]; then
-    echo -e "\e[1;33m[!] Não foi possível verificar atualizações.\e[0m"
+  if [[ -z "$remote_version" ]]; then
+    echo -e "\e[1;33m[!] Não foi possível verificar a versão mais recente.\e[0m"
     return
   fi
 
-  if [[ "$SCRIPT_VERSION_HASH" != "$remote_hash" ]]; then
+  if [[ "$SCRIPT_VERSION" != "$remote_version" ]]; then
     echo -e "\e[1;33m[⚠️] Atualização disponível\e[0m"
     exit 1
   fi
 }
-verificar_atualizacao
+verificar_versao_remota
 
 # === Animação aprimorada ===
 loading_animation() {
