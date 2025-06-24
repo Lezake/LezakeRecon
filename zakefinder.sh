@@ -75,12 +75,14 @@ while true; do
     echo -e "\e[1;32m[✅] GitHub Token válido!\e[0m"
     break
   else
-    read -p $'\e[1;31m[❌] Token inválido. Tentar outro? (s/n): \e[0m' opt
-    [[ $opt == "s" ]] || exit 1
+    echo -e "\e[1;31m[❌] Token inválido.\e[0m"
+    read -p $'\e[1;36m[?] Digite um novo GitHub Token: \e[0m' ghtoken
+    read -p $'\e[1;33m[?] Deseja salvar esse token? (s/n): \e[0m' save
+    [[ $save == "s" ]] && echo "$ghtoken" > "$GITHUB_TOKEN_FILE"
   fi
 done
 
-# === Chaos API ===
+# === Chaos API Key ===
 validar_chaos_token() {
   code=$(curl -s -o /dev/null -w "%{http_code}" \
     -H "Authorization: $1" "https://dns.projectdiscovery.io/dns/$alvo/subdomains")
@@ -102,8 +104,10 @@ while true; do
     echo -e "\e[1;32m[✅] Chaos API Key válida!\e[0m"
     break
   else
-    read -p $'\e[1;31m[❌] Chaos key inválida. Tentar outra? (s/n): \e[0m' opt
-    [[ $opt == "s" ]] || exit 1
+    echo -e "\e[1;31m[❌] Chaos key inválida.\e[0m"
+    read -p $'\e[1;36m[?] Digite uma nova PDCP_API_KEY: \e[0m' pdcp_api_key
+    read -p $'\e[1;33m[?] Deseja salvar essa chave? (s/n): \e[0m' save
+    [[ $save == "s" ]] && echo "$pdcp_api_key" > "$PDCP_API_KEY_FILE"
   fi
 done
 
