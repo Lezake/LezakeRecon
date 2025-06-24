@@ -2,7 +2,7 @@
 clear
 
 # === Versão atual do script ===
-SCRIPT_VERSION="1.4"
+SCRIPT_VERSION="1.5"
 
 # === Verificação de atualização por version.txt ===
 verificar_versao_remota() {
@@ -60,7 +60,7 @@ GITHUB_TOKEN_FILE="$HOME/.github_token"
 PDCP_API_KEY_FILE="$HOME/.pdcp_api_key"
 
 # === Verifica dependências ===
-for tool in subfinder chaos assetfinder findomain github-subdomains; do
+for tool in subfinder chaos assetfinder findomain amass github-subdomains; do
   if ! command -v "$tool" &> /dev/null; then
     echo -e "\e[1;31m[ERRO] '$tool' não encontrado. Instale antes de continuar.\e[0m"
     exit 1
@@ -72,7 +72,7 @@ read -p $'\e[1;36m[?] Digite o domínio alvo: \e[0m' alvo
 
 # === GitHub Token ===
 validar_github_token() {
-  status=$(curl -s -o /dev/null -w "%{http_code}"     -H "Authorization: token $1" https://api.github.com/user)
+  status=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: token $1" https://api.github.com/user)
   [[ $status == "200" ]]
 }
 
@@ -97,7 +97,7 @@ done
 
 # === Chaos API Key ===
 validar_chaos_token() {
-  code=$(curl -s -o /dev/null -w "%{http_code}"     -H "Authorization: $1" "https://dns.projectdiscovery.io/dns/$alvo/subdomains")
+  code=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: $1" "https://dns.projectdiscovery.io/dns/$alvo/subdomains")
   [[ $code == "200" ]]
 }
 
@@ -121,24 +121,27 @@ while true; do
   fi
 done
 
+echo -e "\e[1;35m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m"
+
 # === Execuções com animação ===
 executar_com_animacao "subfinder -d \"$alvo\" -all -silent -o subfinder1" "Subfinder"
 executar_com_animacao "chaos -d \"$alvo\" -silent -rl 300 -o chaos1" "Chaos"
 executar_com_animacao "assetfinder --subs-only \"$alvo\" > assetfinder1" "Assetfinder"
 executar_com_animacao "findomain -t \"$alvo\" -q -u findomain1" "Findomain"
+executar_com_animacao "amass enum -passive -norecursive -noalts -d \"$alvo\" -silent -o amass1" "Amass"
 executar_com_animacao "github-subdomains -d \"$alvo\" -t \"$ghtoken\" -o github1" "GitHub Subdomains"
 
 # === Junta os resultados ===
 echo -e "\e[1;34m[+] Juntando resultados...\e[0m"
 > todos.tmp
-for f in subfinder1 chaos1 assetfinder1 findomain1 github1; do
+for f in subfinder1 chaos1 assetfinder1 findomain1 github1 amass1; do
   [ -f "$f" ] && cat "$f" >> todos.tmp
 done
 
 # === Remove curingas e duplicatas ===
 sed 's/^\*\.//g' todos.tmp > subs_sem_curinga.tmp
 sort -u subs_sem_curinga.tmp > subs.txt
-rm -f subfinder1 chaos1 assetfinder1 findomain1 github1 todos.tmp subs_sem_curinga.tmp
+rm -f subfinder1 chaos1 assetfinder1 findomain1 github1 amass1 todos.tmp subs_sem_curinga.tmp
 
 # === Finalização ===
 echo -e "\e[1;32m[✔️] Finalizado! Subdomínios únicos salvos em \e[1msubs.txt\e[0m"
