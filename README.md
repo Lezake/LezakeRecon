@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://github.com/Lezake/ZakeFinder/blob/eb6f826a1f1e52f2489af88aeb19e2ad706b47b3/zakebanner.png" alt="ZakeFinder Banner" />
+</p>
+
 Como usar:
 
 chmod +x zakefinder.sh
