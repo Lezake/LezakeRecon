@@ -1,6 +1,25 @@
 #!/bin/bash
 clear
 
+# === Hash da versão atual do script ===
+SCRIPT_VERSION_HASH="a77d1069e5f9713320b5c602d68036e26e0da293"
+
+# === Verificação de atualização por hash ===
+verificar_atualizacao() {
+  remote_hash=$(curl -s https://api.github.com/repos/Lezake/ZakeFinder/commits/main | grep '"sha"' | head -n 1 | cut -d '"' -f4)
+
+  if [[ -z "$remote_hash" ]]; then
+    echo -e "\e[1;33m[!] Não foi possível verificar atualizações.\e[0m"
+    return
+  fi
+
+  if [[ "$SCRIPT_VERSION_HASH" != "$remote_hash" ]]; then
+    echo -e "\e[1;33m[⚠️] Atualização disponível\e[0m"
+    exit 1
+  fi
+}
+verificar_atualizacao
+
 # === Animação aprimorada ===
 loading_animation() {
   chars=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏')
@@ -32,9 +51,6 @@ cat << 'EOF'
  ███╔╝  ██╔══██║██╔═██╗ ██╔══╝  ██╔══╝  ██║██║╚██╗██║██║  ██║██╔══╝  ██╔══██╗
 ███████╗██║  ██║██║  ██╗███████╗██║     ██║██║ ╚████║██████╔╝███████╗██║  ██║
 ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚═╝     ╚═╝╚═╝  ╚═══╝╚═════╝╚══════╝╚═╝  ╚═╝
-         ░      ░   ░    ░   ░     ░        ░   ░       ░     ░
-           ░    ░  ░   ░    ░  ░     ░       ░    ░        ░
-             ░        ░    ░      ░       ░     ░      ░     ░
 EOF
 echo -e "\e[0m"
 echo -e "\e[1;35m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m"
@@ -76,9 +92,6 @@ while true; do
     break
   else
     echo -e "\e[1;31m[❌] Token inválido.\e[0m"
-    read -p $'\e[1;36m[?] Digite um novo GitHub Token: \e[0m' ghtoken
-    read -p $'\e[1;33m[?] Deseja salvar esse token? (s/n): \e[0m' save
-    [[ $save == "s" ]] && echo "$ghtoken" > "$GITHUB_TOKEN_FILE"
   fi
 done
 
@@ -105,9 +118,6 @@ while true; do
     break
   else
     echo -e "\e[1;31m[❌] Chaos key inválida.\e[0m"
-    read -p $'\e[1;36m[?] Digite uma nova PDCP_API_KEY: \e[0m' pdcp_api_key
-    read -p $'\e[1;33m[?] Deseja salvar essa chave? (s/n): \e[0m' save
-    [[ $save == "s" ]] && echo "$pdcp_api_key" > "$PDCP_API_KEY_FILE"
   fi
 done
 
