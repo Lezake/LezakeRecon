@@ -40,10 +40,11 @@ Ferramentas Utilizadas
 
 Este script integra as seguintes ferramentas (você deve instalá-las antes de rodar):
 
-subfinder
-chaos
-assetfinder
-findomain
+subfinder,
+chaos,
+assetfinder,
+findomain,
+Amass e
 github-subdomains
 
 Obs: jogue todos em /usr/local/bin
