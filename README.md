@@ -18,6 +18,8 @@ Pronta para Você: Configuração simples de tokens e APIs, com execução limpa
 
 Com o ZakeFinder, você tem o poder das melhores ferramentas de subdomínio na palma da sua mão. Experimente e eleve sua enumeração ao próximo nível!
 
+-----------------------
+
 ## 📘 Como usar:
 
 ```bash
