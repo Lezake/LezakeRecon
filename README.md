@@ -2,9 +2,16 @@
   <img src="https://github.com/Lezake/ZakeFinder/blob/eb6f826a1f1e52f2489af88aeb19e2ad706b47b3/zakebanner.png" alt="ZakeFinder Banner" />
 </p>
 
-📚 <h2>Como usar</h2>:
+📚 <h2>Como usar:</h2>
 
-chmod +x zakefinder.sh | ./zakefinder.sh
+# instalação
+git clone https://github.com/Lezake/ZakeFinder.git
+
+# entrar na pasta 
+cd ZakeFinder
+
+# executar script
+./zakefinder.sh
 
 -----------------------
 Tokens Necessários:
