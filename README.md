@@ -4,7 +4,9 @@
 
 📚 <h2>Como usar:</h2>
 
-<pre> ```bash # instalação git clone https://github.com/Lezake/ZakeFinder.git # entrar na pasta cd ZakeFinder # executar script ./zakefinder.sh ``` </pre>
+<pre> ```bash # instalação git clone https://github.com/Lezake/ZakeFinder.git 
+  # entrar na pasta cd ZakeFinder 
+  # executar script ./zakefinder.sh ``` </pre>
 
 -----------------------
 Tokens Necessários:
