@@ -52,7 +52,9 @@ cat << 'EOF'
 ███████╗██║  ██║██║  ██╗███████╗██║     ██║██║ ╚████║██████╔╝███████╗██║  ██║
 ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚═╝     ╚═╝╚═╝  ╚═══╝╚═════╝╚══════╝╚═╝  ╚═╝
 EOF
-echo -e "\e[0m"
+# Cor roxa escura, alinhado mais à direita (ajustado para 68 colunas)
+echo -e "\e[38;2;160;100;255m$(printf '%68s' '@leo_zmns')\e[0m"
+# Linha logo abaixo
 echo -e "\e[1;35m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\e[0m"
 
 # === Caminhos dos tokens ===
