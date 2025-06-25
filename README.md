@@ -4,13 +4,13 @@
 
 📚 <h2>Como usar:</h2>
 
-# instalação
+#instalação
 git clone https://github.com/Lezake/ZakeFinder.git
 
-# entrar na pasta 
+#entrar na pasta 
 cd ZakeFinder
 
-# executar script
+#executar script
 ./zakefinder.sh
 
 -----------------------
