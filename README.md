@@ -2,6 +2,22 @@
   <img src="https://github.com/Lezake/ZakeFinder/blob/eb6f826a1f1e52f2489af88aeb19e2ad706b47b3/zakebanner.png" alt="ZakeFinder Banner" />
 </p>
 
+ZakeFinder: Enumeração de Subdomínios
+
+O ZakeFinder é uma ferramenta poderosa que reúne algum dos melhores scripts de enumeração de subdomínios, como Subfinder, Chaos, Assetfinder, Findomain, Amass e Github-Subdomains, em um único lugar. Feita para simplificar e agilizar o processo, ela combina eficiência, praticidade e funcionalidade em um só script.
+
+Destaques:
+
+Integração Total: Reúne as principais ferramentas de enumeração em uma solução unificada.
+
+Facilidade de Uso: Executa tudo com um único simples comando, sem complicações.
+
+Resultados Otimizados: Consolida subdomínios e remove duplicatas automaticamente.
+
+Pronta para Você: Configuração simples de tokens e APIs, com execução limpa e organizada.
+
+Com o ZakeFinder, você tem o poder das melhores ferramentas de subdomínio na palma da sua mão. Experimente e eleve sua enumeração ao próximo nível!
+
 ## 📘 Como usar:
 
 ```bash
