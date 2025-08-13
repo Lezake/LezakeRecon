@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://github.com/Lezake/ZakeFinder/blob/eb6f826a1f1e52f2489af88aeb19e2ad706b47b3/zakebanner.png" alt="ZakeFinder Banner" />
+  <img src="https://github.com/Lezake/Lezake/blob/df28540458a9a1249cdd020841c0c36d1eab3e3a/lezakebanner.png" alt="Lezake Banner" />
 </p>
 
 Lezake – Automação Inteligente para Recon em Pentests
