@@ -2,21 +2,28 @@
   <img src="https://github.com/Lezake/ZakeFinder/blob/eb6f826a1f1e52f2489af88aeb19e2ad706b47b3/zakebanner.png" alt="ZakeFinder Banner" />
 </p>
 
-ZakeFinder: Enumeração de Subdomínios
+Lezake – Automação Inteligente para Recon em Pentests
 
-O ZakeFinder é uma ferramenta poderosa que reúne algum dos melhores scripts de enumeração de subdomínios, como Subfinder, Chaos, Assetfinder, Findomain, Amass e Github-Subdomains, em um único lugar. Feita para simplificar e agilizar o processo, ela combina eficiência, praticidade e funcionalidade em um só script.
+O Lezake é uma ferramenta projetada para profissionais e entusiastas de CyberSecurity que querem agilidade e precisão na fase inicial do pentest. Seu objetivo é simplificar e acelerar as tarefas repetitivas de reconhecimento e mapeamento de ativos, garantindo resultados organizados, limpos e prontos para uso.
 
-Destaques:
+Principais recursos (atual):
 
-Integração Total: Reúne as principais ferramentas de enumeração em uma solução unificada.
+Coleta avançada de subdomínios usando as principais ferramentas do mercado (combinação otimizada para máxima cobertura).
 
-Facilidade de Uso: Executa tudo com um único simples comando, sem complicações.
+Remoção automática de duplicatas para garantir uma lista limpa.
 
-Resultados Otimizados: Consolida subdomínios e remove duplicatas automaticamente.
+Instalação automatizada de dependências, sem dor de cabeça.
 
-Pronta para Você: Configuração simples de tokens e APIs, com execução limpa e organizada.
+Por que usar o Lezake?
 
-Com o ZakeFinder, você tem o poder das melhores ferramentas de subdomínio na palma da sua mão. Experimente e eleve sua enumeração ao próximo nível!
+Automatiza tarefas que normalmente levariam horas.
+
+Une eficiência e boa prática, sem comprometer a qualidade.
+
+
+Pronto para crescer: novas funções como busca de arquivos JS, endpoints sensíveis estão sendo pensadas.
+
+Ideal para quem quer começar o pentest com informações ricas, organizadas e sem esforço manual desnecessário.
 
 -----------------------
 
@@ -24,13 +31,13 @@ Com o ZakeFinder, você tem o poder das melhores ferramentas de subdomínio na p
 
 ```bash
 # instalação  
-git clone https://github.com/Lezake/ZakeFinder.git
+git clone https://github.com/Lezake/Lezake.git
 
 # entrar na pasta  
-cd ZakeFinder
+cd Lezake
 
 # executar script  
-./zakefinder.sh
+./lezake.sh
 ```
 
 
@@ -64,24 +71,10 @@ Vá até o dashboard e gere uma API key
 Cole no script quando solicitado
 
 -----------------------
-Ferramentas Utilizadas
-
-Este script integra as seguintes ferramentas (você deve instalá-las antes de rodar):
-
-subfinder,
-chaos,
-assetfinder,
-findomain,
-Amass e
-github-subdomains
-
-Obs: jogue todos em /usr/local/bin
-
------------------------
 Personalização dos Parâmetros:
 
 Todos os comandos usados no script podem ser totalmente personalizados pelo usuário.
-Se desejar, você pode editar o arquivo zakefinder.sh e ajustar:
+Se desejar, você pode editar o arquivo lezake.sh e ajustar:
 
 Os parâmetros do subfinder (ex: -silent, -all, -recursive, etc)
 
