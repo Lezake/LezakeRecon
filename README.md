@@ -2,11 +2,11 @@
   <img src="https://github.com/Lezake/Lezake/blob/df28540458a9a1249cdd020841c0c36d1eab3e3a/lezakebanner.png" alt="Lezake Banner" />
 </p>
 
-Lezake – Automação Inteligente para Recon em Pentests
+Lezake – Automação Inteligente para Recon em Pentests 🔍
 
 O Lezake é uma ferramenta projetada para profissionais e entusiastas de CyberSecurity que querem agilidade e precisão na fase inicial do pentest. Seu objetivo é simplificar e acelerar as tarefas repetitivas de reconhecimento e mapeamento de ativos, garantindo resultados organizados, limpos e prontos para uso.
 
-Principais recursos (atual):
+✅ Principais recursos (atual):
 
 Coleta avançada de subdomínios usando as principais ferramentas do mercado (combinação otimizada para máxima cobertura).
 
