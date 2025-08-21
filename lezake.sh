@@ -1,4 +1,5 @@
 #!/bin/bash
+set -eo pipefail
 clear
 
 # === Detecta suporte a cores ANSI ===
@@ -17,7 +18,7 @@ else
 fi
 
 # === Versão atual do script ===
-SCRIPT_VERSION="1.9"
+SCRIPT_VERSION="1.9.1"
 
 # === Verificação de atualização remota ===
 verificar_versao_remota() {
@@ -43,11 +44,30 @@ loading_animation() {
 
 executar_com_animacao() {
   local comando="$1" label="$2"
+  local output_file
+  output_file=$(mktemp) # Cria um arquivo temporário para guardar a saída
+
   loading_animation & pid=$!
-  eval "$comando" &> /dev/null
-  kill "$pid" &> /dev/null
-  wait "$pid" 2>/dev/null
-  echo -ne "\r${GREEN}[✅] ${label} concluído!${RESET}\n"
+
+  # Executa o comando, redirecionando stdout e stderr para o arquivo temporário
+  if eval "$comando" > "$output_file" 2>&1; then
+    # Sucesso
+    kill "$pid" &> /dev/null || true
+    wait "$pid" 2>/dev/null || true
+    echo -ne "\r${GREEN}[✅] ${label} concluído!${RESET}\n"
+  else
+    # Falha
+    kill "$pid" &> /dev/null || true
+    wait "$pid" 2>/dev/null || true
+    echo -ne "\r${RED}[❌] ${label} falhou!   ${RESET}\n"
+    # Mostra a saída de erro se o arquivo não estiver vazio
+    if [[ -s "$output_file" ]]; then
+      echo -e "${YELLOW}--- Causa da falha em '$label' ---${RESET}"
+      cat "$output_file"
+      echo -e "${YELLOW}---------------------------------${RESET}"
+    fi
+  fi
+  rm -f "$output_file" # Limpa o arquivo temporário
 }
 
 # === Banner Lezake (roxo/magenta) ===
@@ -65,7 +85,7 @@ cat << 'EOF'
                ░
 EOF
 echo -e "$(printf '%50s' '@leo_zmns')${RESET}"
-echo -e "${MAGENTA}${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}\n"
+echo -e "${MAGENTA}${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
 
 # === Verificação e instalação automática de dependências ===
 verificar_instalar_dependencias() {
@@ -75,6 +95,8 @@ verificar_instalar_dependencias() {
     ["assetfinder"]="go install -v github.com/tomnomnom/assetfinder@latest"
     ["github-subdomains"]="go install -v github.com/gwen001/github-subdomains@latest"
     ["amass"]="go install -v github.com/owasp-amass/amass/v4/...@latest"
+    ["gau"]="go install -v github.com/lc/gau/v2/cmd/gau@latest"
+    ["unfurl"]="go install -v github.com/tomnomnom/unfurl@latest"
   )
 
   for tool in "${!ferramentas[@]}"; do
@@ -106,6 +128,23 @@ verificar_instalar_dependencias
 
 # === Função Subdomain Discovery ===
 subdomain_discovery() {
+  # Cria o arquivo de configuração do Amass dinamicamente
+  cat > amass_config.yaml << EOF
+resolvers:
+  - 1.1.1.1
+  - 1.0.0.1
+  - 8.8.8.8
+  - 8.8.4.4
+sources:
+  - BGPView
+  - IPINFO
+  - NetworksDB
+  - RADb
+  - Robtex
+  - ShadowServer
+  - Whois
+EOF
+
   GITHUB_TOKEN_FILE="$HOME/.github_token"
   PDCP_API_KEY_FILE="$HOME/.pdcp_api_key"
   echo -ne "${CYAN}[?] Digite o domínio alvo: ${RESET}"
@@ -166,21 +205,57 @@ subdomain_discovery() {
 
   echo -e "${MAGENTA}${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
 
-  executar_com_animacao "subfinder -d \"$alvo\" -all -silent -o subfinder1" "Subfinder"
-  executar_com_animacao "chaos -d \"$alvo\" -silent -rl 300 -o chaos1" "Chaos"
-  executar_com_animacao "assetfinder --subs-only \"$alvo\" > assetfinder1" "Assetfinder"
-  executar_com_animacao "findomain -t \"$alvo\" -q -u findomain1" "Findomain"
-  executar_com_animacao "amass enum -passive -norecursive -noalts -d \"$alvo\" -silent -o amass1" "Amass"
-  executar_com_animacao "github-subdomains -d \"$alvo\" -t \"$ghtoken\" -o github1" "GitHub Subdomains"
+  # --- Execução Otimizada em Paralelo com Output Limpo ---
+  loading_animation & pid=$!
+  trap 'kill "$pid" &> /dev/null; wait "$pid" 2>/dev/null || true' EXIT
 
-  echo -e "${BLUE}[+] Juntando resultados...${RESET}"
-  > todos.tmp
-  for f in subfinder1 chaos1 assetfinder1 findomain1 github1 amass1; do
-    [[ -f "$f" ]] && cat "$f" >> todos.tmp
-  done
-  sed 's/^\*\.//g' todos.tmp > subs_sem_curinga.tmp
-  sort -u subs_sem_curinga.tmp > subs.txt
-  rm -f subfinder1 chaos1 assetfinder1 findomain1 github1 amass1 todos.tmp subs_sem_curinga.tmp
+  output_dir=$(mktemp -d)
+  trap 'rm -rf "$output_dir"; kill "$pid" &> /dev/null; wait "$pid" 2>/dev/null || true' EXIT
+
+  tools=("subfinder" "chaos" "assetfinder" "findomain" "amass" "github-subdomains" "gau")
+
+  printf "%s\n" "${tools[@]}" | xargs -P 3 -I {} bash -c '
+    tool_name="{}"
+    output_dir="'$output_dir'"
+    alvo="'$alvo'"
+    ghtoken="'$ghtoken'"
+    GREEN="'$GREEN'"
+    RED="'$RED'"
+    RESET="'$RESET'"
+
+    case "$tool_name" in
+      "subfinder") cmd="subfinder -d $alvo -all -silent -o $output_dir/subs_subfinder.txt" ;;
+      "chaos") cmd="chaos -d $alvo -silent -o $output_dir/subs_chaos.txt" ;;
+      "assetfinder") cmd="assetfinder --subs-only $alvo > $output_dir/subs_assetfinder.txt" ;;
+      "findomain") cmd="findomain -t $alvo -q -u $output_dir/subs_findomain.txt" ;;
+      "amass") cmd="amass enum -passive -config amass_config.yaml -d $alvo -silent -timeout 4 -o $output_dir/subs_amass.txt" ;;
+      "github-subdomains") cmd="github-subdomains -d $alvo -t $ghtoken -o $output_dir/subs_github.txt" ;;
+      "gau") cmd="gau $alvo --subs --o $output_dir/subs_gau.txt --threads 50 --timeout 20" ;;
+      *) exit 1 ;;
+    esac
+
+    if ! eval "$cmd" > "$output_dir/${tool_name}.log" 2>&1; then
+      # Se o comando falhar, limpa a animação, mostra o erro e sai
+      echo -e "\r${RED}[❌] Erro fatal ao executar ${tool_name}! Causa:${RESET}\n"
+      cat "$output_dir/${tool_name}.log"
+      echo -e "\n"
+      # Usa exit 255 para fazer o xargs parar
+      exit 255
+    fi
+    # Se o comando for bem-sucedido, apenas mostra a mensagem de conclusão
+    echo -e "\r${GREEN}[✅] ${tool_name} concluído.${RESET}"
+  '
+  echo -e "${MAGENTA}${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
+  kill "$pid" &> /dev/null
+  wait "$pid" 2>/dev/null || true
+  trap - EXIT
+  echo -e "${BLUE}[+] Juntando, limpando e ordenando resultados...${RESET}"
+  
+  # Junta todos os arquivos de resultado, processa e salva
+  cat "$output_dir"/subs_*.txt 2>/dev/null | unfurl -u domains | sed 's/^\*\.//g' | sort -u > subs.txt
+
+  # Limpa o arquivo de configuração do Amass
+  rm -f amass_config.yaml
 
   echo -e "${GREEN}[✔️] Finalizado! Subdomínios únicos salvos em ${BOLD}subs.txt${RESET}"
   echo -e "${MAGENTA}${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
