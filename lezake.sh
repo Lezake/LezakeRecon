@@ -1,6 +1,5 @@
 #!/bin/bash
 set -eo pipefail
-clear
 
 # === Detecta suporte a cores ANSI ===
 if tput colors &> /dev/null && [ "$(tput colors)" -ge 8 ]; then
@@ -18,7 +17,7 @@ else
 fi
 
 # === Versão atual do script ===
-SCRIPT_VERSION="1.9.1"
+SCRIPT_VERSION="1.9.2"
 
 # === Verificação de atualização remota ===
 verificar_versao_remota() {
@@ -29,7 +28,6 @@ verificar_versao_remota() {
     exit 1
   fi
 }
-verificar_versao_remota
 
 # === Funções de animação ===
 loading_animation() {
@@ -42,37 +40,11 @@ loading_animation() {
   done
 }
 
-executar_com_animacao() {
-  local comando="$1" label="$2"
-  local output_file
-  output_file=$(mktemp) # Cria um arquivo temporário para guardar a saída
-
-  loading_animation & pid=$!
-
-  # Executa o comando, redirecionando stdout e stderr para o arquivo temporário
-  if eval "$comando" > "$output_file" 2>&1; then
-    # Sucesso
-    kill "$pid" &> /dev/null || true
-    wait "$pid" 2>/dev/null || true
-    echo -ne "\r${GREEN}[✅] ${label} concluído!${RESET}\n"
-  else
-    # Falha
-    kill "$pid" &> /dev/null || true
-    wait "$pid" 2>/dev/null || true
-    echo -ne "\r${RED}[❌] ${label} falhou!   ${RESET}\n"
-    # Mostra a saída de erro se o arquivo não estiver vazio
-    if [[ -s "$output_file" ]]; then
-      echo -e "${YELLOW}--- Causa da falha em '$label' ---${RESET}"
-      cat "$output_file"
-      echo -e "${YELLOW}---------------------------------${RESET}"
-    fi
-  fi
-  rm -f "$output_file" # Limpa o arquivo temporário
-}
-
 # === Banner Lezake (roxo/magenta) ===
-echo -e "${MAGENTA}${BOLD}"
-cat << 'EOF'
+show_banner() {
+  clear
+  echo -e "${MAGENTA}${BOLD}"
+  cat << 'EOF'
 ██▓    ▓█████ ▒███████▒ ▄▄▄       ██ ▄█▀▓█████
 ▓██▒    ▓█   ▀ ▒ ▒ ▒ ▄▀░▒████▄     ██▄█▒ ▓█   ▀
 ▒██░    ▒███   ░ ▒ ▄▀▒░ ▒██  ▀█▄  ▓███▄░ ▒███
@@ -84,49 +56,322 @@ cat << 'EOF'
     ░  ░   ░  ░  ░ ░          ░  ░░  ░      ░  ░
                ░
 EOF
-echo -e "$(printf '%50s' '@leo_zmns')${RESET}"
-echo -e "${MAGENTA}${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
+  echo -e "$(printf '%50s' '@leo_zmns')${RESET}"
+  echo -e "${MAGENTA}${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
+}
 
 # === Verificação e instalação automática de dependências ===
 verificar_instalar_dependencias() {
+  # Verifica primeiro se o Go está instalado
+  if ! command -v go &> /dev/null; then
+    echo -e "${RED}[❌] Erro Crítico: A linguagem Go não está instalada ou não está no PATH.${RESET}"
+    echo -e "${YELLOW}    O Lezake depende do Go para instalar suas ferramentas."
+    echo -e "${YELLOW}    Por favor, instale o Go e tente novamente."
+    echo -e "${CYAN}    Instruções de instalação: https://go.dev/doc/install${RESET}"
+    exit 1
+  fi
+
+  # Verifica e instala curl, wget, unzip se necessário
+  local system_deps=("curl" "wget" "unzip")
+  for dep in "${system_deps[@]}"; do
+    if ! command -v "$dep" &> /dev/null; then
+      echo -ne "${YELLOW}[⏳] Instalando $dep...${RESET}"
+      if command -v apt-get &> /dev/null; then
+        if ! sudo apt-get update &> /dev/null || ! sudo apt-get install -y "$dep" &> /dev/null; then
+          echo -e "\r${RED}[❌] Falha ao instalar $dep.   ${RESET}"
+          echo -e "${RED}    Por favor, instale $dep manualmente e tente novamente.${RESET}"
+          exit 1
+        fi
+      elif command -v yum &> /dev/null; then
+        if ! sudo yum install -y "$dep" &> /dev/null; then
+          echo -e "\r${RED}[❌] Falha ao instalar $dep.   ${RESET}"
+          echo -e "${RED}    Por favor, instale $dep manualmente e tente novamente.${RESET}"
+          exit 1
+        fi
+      elif command -v pacman &> /dev/null; then
+        if ! sudo pacman -S --noconfirm "$dep" &> /dev/null; then
+          echo -e "\r${RED}[❌] Falha ao instalar $dep.   ${RESET}"
+          echo -e "${RED}    Por favor, instale $dep manualmente e tente novamente.${RESET}"
+          exit 1
+        fi
+      else
+        echo -e "\r${RED}[❌] Sistema não suportado para instalação automática de $dep.${RESET}"
+        echo -e "${RED}    Por favor, instale $dep manualmente e tente novamente.${RESET}"
+        exit 1
+      fi
+      echo -e "\r${GREEN}[✅] $dep instalado com sucesso!${RESET}"
+    fi
+  done
+
+  # Garante que o diretório de binários do Go exista
+  mkdir -p "$HOME/go/bin"
+
+  # Verifica se o PATH precisa ser atualizado e o atualiza para a sessão atual
+  local path_needs_update=false
+  if [[ ":$PATH:" != ":$HOME/go/bin:"* ]]; then
+    path_needs_update=true
+    export PATH="$PATH:$HOME/go/bin"
+  fi
+
   declare -A ferramentas=(
-    ["subfinder"]="go install -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest"
-    ["chaos"]="go install -v github.com/projectdiscovery/chaos-client/cmd/chaos@latest"
-    ["assetfinder"]="go install -v github.com/tomnomnom/assetfinder@latest"
-    ["github-subdomains"]="go install -v github.com/gwen001/github-subdomains@latest"
-    ["amass"]="go install -v github.com/owasp-amass/amass/v4/...@latest"
-    ["gau"]="go install -v github.com/lc/gau/v2/cmd/gau@latest"
-    ["unfurl"]="go install -v github.com/tomnomnom/unfurl@latest"
+    ["subfinder"]="go install github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest"
+    ["chaos"]="go install github.com/projectdiscovery/chaos-client/cmd/chaos@latest"
+    ["assetfinder"]="go install github.com/tomnomnom/assetfinder@latest"
+    ["github-subdomains"]="go install github.com/gwen001/github-subdomains@latest"
+    ["amass"]="go install github.com/owasp-amass/amass/v4/...@latest"
+    ["gau"]="go install github.com/lc/gau/v2/cmd/gau@latest"
+    ["unfurl"]="go install github.com/tomnomnom/unfurl@latest"
   )
 
+  local tools_installed=false
   for tool in "${!ferramentas[@]}"; do
     if ! command -v "$tool" &> /dev/null; then
-      echo -e "${YELLOW}[!] Instalando dependência ausente: $tool...${RESET}"
-      eval "${ferramentas[$tool]}"
-      bin_path="$HOME/go/bin/$tool"
-      if [[ -f "$bin_path" ]]; then
-        sudo mv "$bin_path" /usr/local/bin/
-        echo -e "${GREEN}[+] $tool instalado com sucesso!${RESET}"
-      else
-        echo -e "${RED}[X] Erro ao instalar $tool. Instale manualmente.${RESET}"; exit 1
+      tools_installed=true
+      echo -ne "${YELLOW}[⏳] Instalando $tool...${RESET}"
+
+      if ! eval "${ferramentas[$tool]}" > /dev/null 2>&1; then
+        echo -e "\r${RED}[❌] Falha ao instalar $tool.   ${RESET}"
+        # A verificação de Go já foi feita, então o erro é provavelmente de conexão.
+        echo -e "${RED}    Verifique sua conexão com a internet e tente novamente.${RESET}"
+        exit 1
       fi
+
+      echo -e "\r${GREEN}[✅] $tool instalado com sucesso!${RESET}"
     fi
   done
 
   if ! command -v findomain &> /dev/null; then
-    echo -e "${YELLOW}[!] Instalando findomain...${RESET}"
+    echo -ne "${YELLOW}[⏳] Instalando findomain...${RESET}"
     temp_dir=$(mktemp -d)
-    wget -q https://github.com/findomain/findomain/releases/latest/download/findomain-linux.zip -O "$temp_dir/findomain.zip"
-    unzip -qq "$temp_dir/findomain.zip" -d "$temp_dir"
-    chmod +x "$temp_dir/findomain"
-    sudo mv "$temp_dir/findomain" /usr/local/bin/
+
+    if ! ( wget -q "https://github.com/findomain/findomain/releases/latest/download/findomain-linux.zip" -O "$temp_dir/findomain.zip" && \
+           unzip -qq "$temp_dir/findomain.zip" -d "$temp_dir" && \
+           chmod +x "$temp_dir/findomain" && \
+           mkdir -p "$HOME/go/bin" && \
+           mv "$temp_dir/findomain" "$HOME/go/bin/" ); then
+        echo -e "\r${RED}[❌] Falha ao instalar findomain.${RESET}"
+        rm -rf "$temp_dir"
+        exit 1
+    fi
+
     rm -rf "$temp_dir"
-    echo -e "${GREEN}[+] findomain instalado com sucesso!${RESET}"
+    tools_installed=true
+    echo -e "\r${GREEN}[✅] findomain instalado com sucesso!${RESET}"
+  fi
+
+  # Se alguma ferramenta foi instalada E o PATH do usuário não estava configurado, mostra a instrução.
+  if [ "$tools_installed" = true ] && [ "$path_needs_update" = true ]; then
+    echo -e "\n${YELLOW}[⚠️] Atenção: Para que as ferramentas funcionem permanentemente, seu PATH precisa ser atualizado.${RESET}"
+    echo -e "${YELLOW}    Execute o comando abaixo e reinicie seu terminal:${RESET}"
+    echo -e "${CYAN}    echo 'export PATH=\$PATH:\$HOME/go/bin' >> ~/.bashrc${RESET}"
+    echo -e "${YELLOW}    (Se você usa ZSH ou outro shell, ajuste o comando para ~/.zshrc ou equivalente).${RESET}"
   fi
 }
-verificar_instalar_dependencias
 
-# === Função Subdomain Discovery ===
+# --- Variáveis Globais e Limpeza ---
+declare -g pid=""
+declare -g output_dir=""
+declare -g alvo=""
+declare -g ghtoken=""
+declare -g pdcp_api_key=""
+
+# Função de limpeza a ser executada na saída do script
+cleanup() {
+  # Garante que o processo de animação seja finalizado
+  if [[ -n "$pid" ]]; then
+    kill "$pid" &> /dev/null
+    wait "$pid" 2>/dev/null || true
+  fi
+  # Remove o diretório temporário se ele foi criado
+  if [[ -n "$output_dir" && -d "$output_dir" ]]; then
+    rm -rf "$output_dir"
+  fi
+  # Remove o arquivo de configuração do Amass
+  rm -f amass_config.yaml
+}
+# Registra a função de limpeza para ser executada em qualquer saída do script
+trap cleanup EXIT
+
+
+# === Funções Refatoradas para Descoberta de Subdomínios ===
+
+# Helper para salvar chaves de API de forma permanente no arquivo de configuração do shell
+save_key_permanently() {
+  local key_name="$1"
+  local key_value="$2"
+  local shell_config_file=""
+
+  # Detecta o shell do usuário para encontrar o arquivo de configuração correto
+  if [[ "$SHELL" == */zsh ]]; then
+    shell_config_file="$HOME/.zshrc"
+  elif [[ "$SHELL" == */bash ]]; then
+    shell_config_file="$HOME/.bashrc"
+  else
+    echo -e "${YELLOW}[⚠️] Shell não suportado para salvamento automático. Configure a variável de ambiente manualmente.${RESET}"
+    return
+  fi
+
+  # Garante que o arquivo de configuração exista
+  touch "$shell_config_file"
+
+  # Verifica se a chave já está definida no arquivo para evitar duplicatas
+  if grep -q "export ${key_name}=" "$shell_config_file"; then
+    echo -e "${BLUE}[ℹ️] A chave ${key_name} já está configurada em seu ${shell_config_file}.${RESET}"
+  else
+    echo -e "${YELLOW}[⏳] Adicionando ${key_name} ao seu ${shell_config_file}...${RESET}"
+    # Adiciona o comando de exportação ao final do arquivo
+    echo -e "\n# Adicionado pelo script Lezake para automação de chaves de API\nexport ${key_name}=\"${key_value}\"" >> "$shell_config_file"
+    echo -e "${GREEN}[✅] Chave salva com sucesso! Por favor, reinicie seu terminal ou execute 'source ${shell_config_file}' para aplicar a mudança.${RESET}"
+  fi
+}
+
+# Coleta e valida o domínio alvo e os tokens necessários.
+get_user_input() {
+  while true;
+ do
+    echo -ne "${CYAN}[?] Digite o domínio alvo: ${RESET}"
+    read alvo
+    if [[ "$alvo" =~ ^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
+      break
+    else
+      echo -e "${RED}[!] Domínio inválido. Por favor, insira um domínio válido (ex: google.com).${RESET}"
+    fi
+  done
+
+  validar_github_token() {
+    status=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: token $1" https://api.github.com/user)
+    [[ $status == "200" ]]
+  }
+
+  while true;
+ do
+    # Hierarquia: Variável de Ambiente > Pergunta ao Usuário
+    if [[ -n "$GITHUB_TOKEN" ]]; then
+      ghtoken=$GITHUB_TOKEN
+      echo -e "${BLUE}[+] Usando GitHub Token.${RESET}"
+    else
+      echo -ne "${CYAN}[?] Digite seu GitHub Token (a entrada ficará oculta): ${RESET}"
+      read -s ghtoken
+      echo # Adiciona uma nova linha após a leitura silenciosa
+
+      echo -ne "${YELLOW}[?] Deseja salvar este token permanentemente em seu shell para não ser perguntado novamente? (s/n): ${RESET}"
+      read -r save
+      if [[ $save == "s" ]]; then
+        save_key_permanently "GITHUB_TOKEN" "$ghtoken"
+      fi
+    fi
+
+    if validar_github_token "$ghtoken"; then
+      echo -e "${GREEN}[✅] GitHub Token válido!${RESET}"
+      break
+    else
+      echo -e "${RED}[❌] Token inválido.${RESET}"
+    fi
+  done
+
+  validar_chaos_token() {
+    local key_to_validate=$1
+    code=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: $key_to_validate" "https://dns.projectdiscovery.io/dns/$alvo/subdomains")
+    [[ $code == "200" ]]
+  }
+
+  while true;
+ do
+    # Hierarquia: Variável de Ambiente > Pergunta ao Usuário
+    if [[ -n "$PDCP_API_KEY" ]]; then
+      pdcp_api_key=$PDCP_API_KEY
+      echo -e "${BLUE}[+] Usando Chaos API Key.${RESET}"
+    else
+      echo -ne "${CYAN}[?] Digite sua PDCP_API_KEY do Chaos (a entrada ficará oculta): ${RESET}"
+      read -s pdcp_api_key
+      echo # Adiciona uma nova linha
+
+      echo -ne "${YELLOW}[?] Deseja salvar esta chave permanentemente em seu shell para não ser perguntado novamente? (s/n): ${RESET}"
+      read -r save
+      if [[ $save == "s" ]]; then
+        save_key_permanently "PDCP_API_KEY" "$pdcp_api_key"
+      fi
+    fi
+
+    if validar_chaos_token "$pdcp_api_key"; then
+      # Exporta a variável para que o cliente chaos a use
+      export PDCP_API_KEY="$pdcp_api_key"
+      echo -e "${GREEN}[✅] Chaos API Key válida!${RESET}"
+      break
+    else
+      echo -e "${RED}[❌] Chaos key inválida.${RESET}"
+    fi
+  done
+}
+
+
+# Executa as ferramentas de reconhecimento em paralelo.
+run_recon_tools() {
+  echo -e "${MAGENTA}${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
+  loading_animation & pid=$!
+
+  output_dir=$(mktemp -d)
+
+  run_recon_tool() {
+    local tool_name="$1"
+    local log_file="$output_dir/${tool_name}.log"
+    local command_to_run=""
+
+    case "$tool_name" in
+      "subfinder")   command_to_run="subfinder -d $alvo -all -silent -o $output_dir/subs_subfinder.txt" ;;
+      "chaos")       command_to_run="chaos -d $alvo -silent -o $output_dir/subs_chaos.txt" ;;
+      "assetfinder") command_to_run="assetfinder --subs-only $alvo > $output_dir/subs_assetfinder.txt" ;;
+      "findomain")   command_to_run="findomain -t $alvo -q -u $output_dir/subs_findomain.txt" ;;
+      "amass")       command_to_run="amass enum -passive -config amass_config.yaml -d $alvo -silent -timeout 4 -o $output_dir/subs_amass.txt" ;;
+      "github-subdomains") command_to_run="github-subdomains -d $alvo -t $ghtoken -o $output_dir/subs_github.txt" ;;
+      "gau")         command_to_run="gau $alvo --subs --o $output_dir/subs_gau.txt --threads 5 --timeout 30" ;;
+      *) return 1 ;;
+    esac
+
+    if ! bash -c "$command_to_run" > "$log_file" 2>&1; then
+      # Para a animação para não poluir a saída de erro
+      if [[ -n "$pid" ]]; then
+        kill "$pid" &> /dev/null
+        wait "$pid" 2>/dev/null || true
+      fi
+      echo -e "\r${RED}[❌] Erro fatal ao executar ${tool_name}! Causa:${RESET}\n"
+      cat "$log_file"
+      echo -e "\n"
+      exit 255
+    fi
+    echo -e "\r${GREEN}[✅] ${tool_name} concluído.${RESET}"
+  }
+
+  tools=("subfinder" "chaos" "assetfinder" "findomain" "amass" "github-subdomains" "gau")
+  export alvo ghtoken output_dir GREEN RED RESET
+  export -f run_recon_tool
+
+  printf "%s\n" "${tools[@]}" | xargs -P $(($(nproc) * 2)) -I {} bash -c 'run_recon_tool "{}"'
+
+  echo -e "${MAGENTA}${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
+}
+
+# Processa e consolida os resultados de todas as ferramentas.
+process_results() {
+  echo -e "${BLUE}[+] Juntando, limpando e ordenando resultados...${RESET}"
+
+  local base_filename="${alvo}.txt"
+  local output_filename="${base_filename}"
+  local counter=1
+
+  # Procura por um nome de arquivo que ainda não exista para evitar sobrescrita
+  while [[ -f "$output_filename" ]]; do
+    output_filename="${alvo}_${counter}.txt"
+    ((counter++))
+  done
+
+  cat "$output_dir"/subs_*.txt 2>/dev/null | unfurl -u domains | sed 's/^\*\.//g' | sort -u > "$output_filename"
+
+  echo -e "${GREEN}[✔️] Finalizado! Subdomínios únicos salvos em ${BOLD}${output_filename}${RESET}"
+  echo -e "${MAGENTA}${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
+}
+
+# === Função Principal de Orquestração ===
 subdomain_discovery() {
   # Cria o arquivo de configuração do Amass dinamicamente
   cat > amass_config.yaml << EOF
@@ -145,128 +390,28 @@ sources:
   - Whois
 EOF
 
-  GITHUB_TOKEN_FILE="$HOME/.github_token"
-  PDCP_API_KEY_FILE="$HOME/.pdcp_api_key"
-  echo -ne "${CYAN}[?] Digite o domínio alvo: ${RESET}"
-  read alvo
+  get_user_input
+  run_recon_tools
 
-  validar_github_token() {
-    status=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: token $1" https://api.github.com/user)
-    [[ $status == "200" ]]
-  }
+  # Finaliza a animação e limpa a linha ANTES de processar os resultados
+  if [[ -n "$pid" ]]; then
+    kill "$pid" &> /dev/null
+    wait "$pid" 2>/dev/null || true
+    pid="" # Evita que a função cleanup tente matar o processo novamente
+    # Limpa a linha que a animação estava usando
+    echo -ne "\r\033[K"
+  fi
 
-  while true; do
-    if [[ -f "$GITHUB_TOKEN_FILE" ]]; then
-      ghtoken=$(<"$GITHUB_TOKEN_FILE")
-      echo -e "${BLUE}[+] Usando GitHub Token salvo.${RESET}"
-    else
-      echo -ne "${CYAN}[?] Digite seu GitHub Token: ${RESET}"
-      read ghtoken
-      echo -ne "${YELLOW}[?] Deseja salvar esse token? (s/n): ${RESET}"
-      read save
-      [[ $save == "s" ]] && echo "$ghtoken" > "$GITHUB_TOKEN_FILE"
-    fi
-
-    if validar_github_token "$ghtoken"; then
-      echo -e "${GREEN}[✅] GitHub Token válido!${RESET}"
-      break
-    else
-      echo -e "${RED}[❌] Token inválido.${RESET}"
-      rm -f "$GITHUB_TOKEN_FILE"
-    fi
-  done
-
-  validar_chaos_token() {
-    code=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: $1" "https://dns.projectdiscovery.io/dns/$alvo/subdomains")
-    [[ $code == "200" ]]
-  }
-
-  while true; do
-    if [[ -f "$PDCP_API_KEY_FILE" ]]; then
-      pdcp_api_key=$(<"$PDCP_API_KEY_FILE")
-      echo -e "${BLUE}[+] Usando Chaos API Key salva.${RESET}"
-    else
-      echo -ne "${CYAN}[?] Digite sua PDCP_API_KEY do Chaos: ${RESET}"
-      read pdcp_api_key
-      echo -ne "${YELLOW}[?] Deseja salvar essa chave? (s/n): ${RESET}"
-      read save
-      [[ $save == "s" ]] && echo "$pdcp_api_key" > "$PDCP_API_KEY_FILE"
-    fi
-
-    if validar_chaos_token "$pdcp_api_key"; then
-      export PDCP_API_KEY="$pdcp_api_key"
-      echo -e "${GREEN}[✅] Chaos API Key válida!${RESET}"
-      break
-    else
-      echo -e "${RED}[❌] Chaos key inválida.${RESET}"
-      rm -f "$PDCP_API_KEY_FILE"
-    fi
-  done
-
-  echo -e "${MAGENTA}${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
-
-  # --- Execução Otimizada em Paralelo com Output Limpo ---
-  loading_animation & pid=$!
-  trap 'kill "$pid" &> /dev/null; wait "$pid" 2>/dev/null || true' EXIT
-
-  output_dir=$(mktemp -d)
-  trap 'rm -rf "$output_dir"; kill "$pid" &> /dev/null; wait "$pid" 2>/dev/null || true' EXIT
-
-  tools=("subfinder" "chaos" "assetfinder" "findomain" "amass" "github-subdomains" "gau")
-
-  printf "%s\n" "${tools[@]}" | xargs -P 3 -I {} bash -c '
-    tool_name="{}"
-    output_dir="'$output_dir'"
-    alvo="'$alvo'"
-    ghtoken="'$ghtoken'"
-    GREEN="'$GREEN'"
-    RED="'$RED'"
-    RESET="'$RESET'"
-
-    case "$tool_name" in
-      "subfinder") cmd="subfinder -d $alvo -all -silent -o $output_dir/subs_subfinder.txt" ;;
-      "chaos") cmd="chaos -d $alvo -silent -o $output_dir/subs_chaos.txt" ;;
-      "assetfinder") cmd="assetfinder --subs-only $alvo > $output_dir/subs_assetfinder.txt" ;;
-      "findomain") cmd="findomain -t $alvo -q -u $output_dir/subs_findomain.txt" ;;
-      "amass") cmd="amass enum -passive -config amass_config.yaml -d $alvo -silent -timeout 4 -o $output_dir/subs_amass.txt" ;;
-      "github-subdomains") cmd="github-subdomains -d $alvo -t $ghtoken -o $output_dir/subs_github.txt" ;;
-      "gau") cmd="gau $alvo --subs --o $output_dir/subs_gau.txt --threads 50 --timeout 20" ;;
-      *) exit 1 ;;
-    esac
-
-    if ! eval "$cmd" > "$output_dir/${tool_name}.log" 2>&1; then
-      # Se o comando falhar, limpa a animação, mostra o erro e sai
-      echo -e "\r${RED}[❌] Erro fatal ao executar ${tool_name}! Causa:${RESET}\n"
-      cat "$output_dir/${tool_name}.log"
-      echo -e "\n"
-      # Usa exit 255 para fazer o xargs parar
-      exit 255
-    fi
-    # Se o comando for bem-sucedido, apenas mostra a mensagem de conclusão
-    echo -e "\r${GREEN}[✅] ${tool_name} concluído.${RESET}"
-  '
-  echo -e "${MAGENTA}${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
-  kill "$pid" &> /dev/null
-  wait "$pid" 2>/dev/null || true
-  trap - EXIT
-  echo -e "${BLUE}[+] Juntando, limpando e ordenando resultados...${RESET}"
-  
-  # Junta todos os arquivos de resultado, processa e salva
-  cat "$output_dir"/subs_*.txt 2>/dev/null | unfurl -u domains | sed 's/^\*\.//g' | sort -u > subs.txt
-
-  # Limpa o arquivo de configuração do Amass
-  rm -f amass_config.yaml
-
-  echo -e "${GREEN}[✔️] Finalizado! Subdomínios únicos salvos em ${BOLD}subs.txt${RESET}"
-  echo -e "${MAGENTA}${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
+  process_results
 }
 
 # === Menu principal Lezake (clean, elegante) ===
-while true; do
-  clear
-  # Banner e identidade
-  echo -e "${MAGENTA}${BOLD}"
-  cat << 'EOF'
+show_menu() {
+  while true; do
+    clear
+    # Banner e identidade
+    echo -e "${MAGENTA}${BOLD}"
+    cat << 'EOF'
 ██▓    ▓█████ ▒███████▒ ▄▄▄       ██ ▄█▀▓█████
 ▓██▒    ▓█   ▀ ▒ ▒ ▒ ▄▀░▒████▄     ██▄█▒ ▓█   ▀
 ▒██░    ▒███   ░ ▒ ▄▀▒░ ▒██  ▀█▄  ▓███▄░ ▒███
@@ -278,29 +423,43 @@ while true; do
     ░  ░   ░  ░  ░ ░          ░  ░░  ░      ░  ░
                ░
 EOF
-  echo -e "$(printf '%50s' '@leo_zmns')${RESET}"
-  echo -e "${MAGENTA}${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}\n"
+    echo -e "$(printf '%50s' '@leo_zmns')${RESET}"
+    echo -e "${MAGENTA}${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}\n"
 
-  # Menu opções no estilo horizontal
-  echo -e "${CYAN}[1] Subdomain Discovery${RESET}    ${RED}[0] Sair${RESET}\n"
-  echo -ne "${YELLOW}[?] Escolha uma opção: ${RESET}"
+    # Menu opções no estilo horizontal
+    echo -e "${MAGENTA}[1]${RESET} Subdomain Discovery    ${RED}[0] Sair${RESET}\n"
+    echo -ne "${YELLOW}[?] Escolha uma opção: ${RESET}"
 
-  read opcao
+    read opcao
 
-  case "$opcao" in
-    1)
-      # Limpa apenas as linhas do menu e prompt antes de prosseguir
-      tput cuu 3 # Move o cursor três linhas acima (menu, linha em branco, prompt)
-      tput ed   # Limpa da posição do cursor até o final da tela
-      subdomain_discovery
-      break
-      ;;
-    0)
-      exit 0
-      ;;
-    *)
-      echo -e "${RED}[!] Opção inválida.${RESET}"
-      sleep 1.5
-      ;;
-  esac
-done
+    case "$opcao" in
+      1)
+        # Limpa apenas as linhas do menu e prompt antes de prosseguir
+        tput cuu 3 # Move o cursor três linhas acima (menu, linha em branco, prompt)
+        tput ed   # Limpa da posição do cursor até o final da tela
+        subdomain_discovery
+        break
+        ;;
+      0)
+        exit 0
+        ;;
+      *)
+        echo -e "${RED}[!] Opção inválida.${RESET}"
+        sleep 1.5
+        ;;
+    esac
+  done
+}
+
+# === FUNÇÃO MAIN ===
+main() {
+  show_banner
+  verificar_versao_remota
+  verificar_instalar_dependencias
+  show_menu
+}
+
+# Executa apenas se o script for chamado diretamente (não sourced)
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  main "$@"
+fi
