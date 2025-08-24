@@ -214,16 +214,22 @@ save_key_permanently() {
   # Garante que o arquivo de configuração exista
   touch "$shell_config_file"
 
-  # Verifica se a chave já está definida no arquivo para evitar duplicatas
+  # Verifica se a chave já está definida no arquivo para decidir entre atualizar ou adicionar
   if grep -q "export ${key_name}=" "$shell_config_file"; then
-    echo -e "${BLUE}[ℹ️] A chave ${key_name} já está configurada em seu ${shell_config_file}.${RESET}"
+    # A chave existe, então vamos ATUALIZAR a linha existente
+    echo -e "${YELLOW}[⏳] Chave ${key_name} já existe. Atualizando com o novo valor em ${shell_config_file}...${RESET}"
+    # Usa sed para substituir a linha. Cria um backup (.bak) por segurança.
+    sed -i.bak "s|^export ${key_name}=.*|export ${key_name}=\"${key_value}\"|" "$shell_config_file"
+    echo -e "${GREEN}[✅] Chave atualizada! Por favor, reinicie seu terminal ou execute 'source ${shell_config_file}' para aplicar.${RESET}"
   else
+    # A chave não existe, então vamos ADICIONAR
     echo -e "${YELLOW}[⏳] Adicionando ${key_name} ao seu ${shell_config_file}...${RESET}"
     # Adiciona o comando de exportação ao final do arquivo
     echo -e "\n# Adicionado pelo script Lezake para automação de chaves de API\nexport ${key_name}=\"${key_value}\"" >> "$shell_config_file"
     echo -e "${GREEN}[✅] Chave salva com sucesso! Por favor, reinicie seu terminal ou execute 'source ${shell_config_file}' para aplicar a mudança.${RESET}"
   fi
 }
+
 
 # Coleta e valida o domínio alvo e os tokens necessários.
 get_user_input() {
@@ -239,69 +245,92 @@ get_user_input() {
   done
 
   validar_github_token() {
+    # Retorna 1 se o token for vazio para evitar chamada de API desnecessária
+    [[ -z "$1" ]] && return 1
     status=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: token $1" https://api.github.com/user)
     [[ $status == "200" ]]
   }
 
-  while true;
- do
-    # Hierarquia: Variável de Ambiente > Pergunta ao Usuário
-    if [[ -n "$GITHUB_TOKEN" ]]; then
+  # --- Lógica para GitHub Token ---
+  ghtoken_valido=false
+  # 1. Tenta usar a variável de ambiente primeiro
+  if [[ -n "$GITHUB_TOKEN" ]]; then
+    echo -e "${BLUE}[+] Verificando GitHub Token...${RESET}"
+    if validar_github_token "$GITHUB_TOKEN"; then
       ghtoken=$GITHUB_TOKEN
-      echo -e "${BLUE}[+] Usando GitHub Token.${RESET}"
+      ghtoken_valido=true
+      echo -e "${GREEN}[✅] GitHub Token válido!${RESET}"
     else
+      echo -e "${RED}[❌] O GitHub Token é inválido.${RESET}"
+    fi
+  fi
+
+  # 2. Se o token não for válido, entra no loop para pedir ao usuário
+  if ! $ghtoken_valido; then
+    while true; do
       echo -ne "${CYAN}[?] Digite seu GitHub Token (a entrada ficará oculta): ${RESET}"
       read -s ghtoken
-      echo # Adiciona uma nova linha após a leitura silenciosa
+      echo
 
-      echo -ne "${YELLOW}[?] Deseja salvar este token permanentemente em seu shell para não ser perguntado novamente? (s/n): ${RESET}"
-      read -r save
-      if [[ $save == "s" ]]; then
-        save_key_permanently "GITHUB_TOKEN" "$ghtoken"
+      if validar_github_token "$ghtoken"; then
+        echo -e "${GREEN}[✅] GitHub Token válido!${RESET}"
+        # Pergunta se quer salvar o novo token válido
+        echo -ne "${YELLOW}[?] Deseja salvar este token permanentemente em seu shell para uso futuro? (s/n): ${RESET}"
+        read -r save
+        if [[ $save == "s" ]]; then
+          save_key_permanently "GITHUB_TOKEN" "$ghtoken"
+        fi
+        break # Sai do loop de entrada do usuário
+      else
+        echo -e "${RED}[❌] GitHub Token inválido. Tente novamente.${RESET}"
       fi
-    fi
-
-    if validar_github_token "$ghtoken"; then
-      echo -e "${GREEN}[✅] GitHub Token válido!${RESET}"
-      break
-    else
-      echo -e "${RED}[❌] Token inválido.${RESET}"
-    fi
-  done
+    done
+  fi
 
   validar_chaos_token() {
-    local key_to_validate=$1
-    code=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: $key_to_validate" "https://dns.projectdiscovery.io/dns/$alvo/subdomains")
+    [[ -z "$1" ]] && return 1
+    code=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: $1" "https://dns.projectdiscovery.io/dns/$alvo/subdomains")
     [[ $code == "200" ]]
   }
 
-  while true;
- do
-    # Hierarquia: Variável de Ambiente > Pergunta ao Usuário
-    if [[ -n "$PDCP_API_KEY" ]]; then
+  # --- Lógica para Chaos API Key ---
+  pdcp_api_key_valido=false
+  # 1. Tenta usar a variável de ambiente
+  if [[ -n "$PDCP_API_KEY" ]]; then
+    echo -e "${BLUE}[+] Verificando Chaos API Key...${RESET}"
+    if validar_chaos_token "$PDCP_API_KEY"; then
       pdcp_api_key=$PDCP_API_KEY
-      echo -e "${BLUE}[+] Usando Chaos API Key.${RESET}"
+      pdcp_api_key_valido=true
+      echo -e "${GREEN}[✅] Chaos API Key válida!${RESET}"
     else
+      echo -e "${RED}[❌] A Chaos key é inválida.${RESET}"
+    fi
+  fi
+
+  # 2. Se a chave não for válida, entra no loop para pedir ao usuário
+  if ! $pdcp_api_key_valido; then
+    while true; do
       echo -ne "${CYAN}[?] Digite sua PDCP_API_KEY do Chaos (a entrada ficará oculta): ${RESET}"
       read -s pdcp_api_key
-      echo # Adiciona uma nova linha
+      echo
 
-      echo -ne "${YELLOW}[?] Deseja salvar esta chave permanentemente em seu shell para não ser perguntado novamente? (s/n): ${RESET}"
-      read -r save
-      if [[ $save == "s" ]]; then
-        save_key_permanently "PDCP_API_KEY" "$pdcp_api_key"
+      if validar_chaos_token "$pdcp_api_key"; then
+        echo -e "${GREEN}[✅] Chaos API Key válida!${RESET}"
+        # Pergunta se quer salvar a nova chave válida
+        echo -ne "${YELLOW}[?] Deseja salvar esta chave permanentemente em seu shell para uso futuro? (s/n): ${RESET}"
+        read -r save
+        if [[ $save == "s" ]]; then
+          save_key_permanently "PDCP_API_KEY" "$pdcp_api_key"
+        fi
+        break # Sai do loop de entrada do usuário
+      else
+        echo -e "${RED}[❌] Chaos key inválida. Tente novamente.${RESET}"
       fi
-    fi
+    done
+  fi
 
-    if validar_chaos_token "$pdcp_api_key"; then
-      # Exporta a variável para que o cliente chaos a use
-      export PDCP_API_KEY="$pdcp_api_key"
-      echo -e "${GREEN}[✅] Chaos API Key válida!${RESET}"
-      break
-    else
-      echo -e "${RED}[❌] Chaos key inválida.${RESET}"
-    fi
-  done
+  # Exporta a chave final e válida para que as ferramentas a utilizem
+  export PDCP_API_KEY="$pdcp_api_key"
 }
 
 
