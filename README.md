@@ -4,7 +4,7 @@
 
 Lezake – Automação Inteligente para Recon em Pentests 🔍
 
-O Lezake é uma solução voltada para profissionais e entusiastas de CyberSecurity que buscam agilidade e confiabilidade na fase de reconhecimento. Desenvolvido com foco em eficiência e organização, ele visa eliminar tarefas manuais repetitivas, oferecendo um fluxo otimizado para coleta e estruturação de informações críticas.
+O Lezake é uma solução voltada para profissionais e entusiastas de CyberSecurity que buscam agilidade e confiabilidade na fase de reconhecimento. Desenvolvido com foco em eficiência e organização, ele visa eliminar tarefas manuais repetitivas, oferecendo um fluxo otimizado para coleta e estruturação de informações.
 
 Com uma arquitetura pensada para escalabilidade e evolução contínua, o Lezake é ideal para quem deseja iniciar suas análises com dados bem estruturados e prontos para uso, mantendo boas práticas e qualidade em cada etapa.
 
