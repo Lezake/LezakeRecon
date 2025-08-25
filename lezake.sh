@@ -17,7 +17,7 @@ else
 fi
 
 # === Versão atual do script ===
-SCRIPT_VERSION="1.9.2"
+SCRIPT_VERSION="1.9.3"
 
 # === Verificação de atualização remota ===
 verificar_versao_remota() {
@@ -334,7 +334,7 @@ get_user_input() {
 }
 
 
-# Executa as ferramentas de reconhecimento em paralelo.
+# Executa as ferramentas de reconhecimento em paralelo, divididas em grupos.
 run_recon_tools() {
   echo -e "${MAGENTA}${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
   loading_animation & pid=$!
@@ -351,9 +351,9 @@ run_recon_tools() {
       "chaos")       command_to_run="chaos -d $alvo -silent -o $output_dir/subs_chaos.txt" ;;
       "assetfinder") command_to_run="assetfinder --subs-only $alvo > $output_dir/subs_assetfinder.txt" ;;
       "findomain")   command_to_run="findomain -t $alvo -q -u $output_dir/subs_findomain.txt" ;;
-      "amass")       command_to_run="amass enum -passive -config amass_config.yaml -d $alvo -silent -timeout 4 -o $output_dir/subs_amass.txt" ;;
+      "amass")       command_to_run="amass enum -passive -config amass_config.yaml -d $alvo -silent -timeout 10 -o $output_dir/subs_amass.txt" ;;
       "github-subdomains") command_to_run="github-subdomains -d $alvo -t $ghtoken -o $output_dir/subs_github.txt" ;;
-      "gau")         command_to_run="gau $alvo --subs --o $output_dir/subs_gau.txt --threads 5 --timeout 30" ;;
+      "gau")         command_to_run="gau $alvo --subs --blacklist png,jpg,jpeg,gif,css,svg,ico,woff,ttf,mp4,avi --o $output_dir/subs_gau.txt --threads 7 --timeout 10" ;;
       *) return 1 ;;
     esac
 
@@ -368,17 +368,27 @@ run_recon_tools() {
       echo -e "\n"
       exit 255
     fi
+    # A animação de loading irá sobrescrever esta mensagem, que piscará brevemente.
     echo -e "\r${GREEN}[✅] ${tool_name} concluído.${RESET}"
   }
 
-  tools=("subfinder" "chaos" "assetfinder" "findomain" "amass" "github-subdomains" "gau")
+  # Grupo 1: Ferramentas rápidas (execução com paralelismo máximo)
+  local fast_tools=("subfinder" "assetfinder" "findomain" "github-subdomains" "chaos")
+  # Grupo 2: Ferramentas mais pesadas/demoradas (execução com paralelismo limitado)
+  local heavy_tools=("amass" "gau")
+
   export alvo ghtoken output_dir GREEN RED RESET
   export -f run_recon_tool
 
-  printf "%s\n" "${tools[@]}" | xargs -P $(($(nproc) * 2)) -I {} bash -c 'run_recon_tool "{}"'
+  # As mensagens de execução de grupo foram removidas a pedido do usuário para evitar conflito com a animação.
+  printf "%s\n" "${fast_tools[@]}" | xargs -P $(($(nproc) * 2)) -I {} bash -c 'run_recon_tool "{}"'
+  printf "%s\n" "${heavy_tools[@]}" | xargs -P 2 -I {} bash -c 'run_recon_tool "{}"'
 
   echo -e "${MAGENTA}${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
 }
+
+
+
 
 # Processa e consolida os resultados de todas as ferramentas.
 process_results() {
