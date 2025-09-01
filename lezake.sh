@@ -380,8 +380,8 @@ run_recon_tools() {
   export -f run_recon_tool
 
   # As mensagens de execução de grupo foram removidas a pedido do usuário para evitar conflito com a animação.
-  printf "%s\n" "${fast_tools[@]}" | xargs -P $(($(nproc) * 2)) -I {} bash -c 'run_recon_tool "{}"'
-  printf "%s\n" "${heavy_tools[@]}" | xargs -P 2 -I {} bash -c 'run_recon_tool "{}"'
+  printf "%s\n" "${fast_tools[@]}" | xargs -P $(nproc) -I {} bash -c 'run_recon_tool "{}"'
+  printf "%s\n" "${heavy_tools[@]}" | xargs -P 1 -I {} bash -c 'run_recon_tool "{}"'
 
   echo -e "${MAGENTA}${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
 }
