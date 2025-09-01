@@ -17,14 +17,14 @@ else
 fi
 
 # === Versão atual do script ===
-SCRIPT_VERSION="1.9.3"
+SCRIPT_VERSION="1.9.3" # Recomendo atualizar para 1.9.4 ou 2.0.0 com a nova feature
 
 # === Verificação de atualização remota ===
 verificar_versao_remota() {
   remote_version=$(curl -s https://raw.githubusercontent.com/Lezake/Lezake/refs/heads/main/version.txt)
   [[ -z "$remote_version" ]] && return
   if [[ "$SCRIPT_VERSION" != "$remote_version" ]]; then
-    echo -e "${YELLOW}[⚠️] Atualização disponível para Lezake (de ${SCRIPT_VERSION} → ${remote_version}).${RESET}"
+    echo -e "${YELLOW}⚠️ Atualização disponível para Lezake (de ${SCRIPT_VERSION} → ${remote_version}).${RESET}"
     exit 1
   fi
 }
@@ -34,7 +34,7 @@ loading_animation() {
   local chars=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏')
   while :; do
     for c in "${chars[@]}"; do
-      echo -ne "\r${CYAN}[⏳] Coletando... $c${RESET}"
+      echo -ne "\r${CYAN}⏳ Coletando... $c${RESET}"
       sleep 0.1
     done
   done
@@ -64,7 +64,7 @@ EOF
 verificar_instalar_dependencias() {
   # Verifica primeiro se o Go está instalado
   if ! command -v go &> /dev/null; then
-    echo -e "${RED}[❌] Erro Crítico: A linguagem Go não está instalada ou não está no PATH.${RESET}"
+    echo -e "${RED}❌ Erro Crítico: A linguagem Go não está instalada ou não está no PATH.${RESET}"
     echo -e "${YELLOW}    O Lezake depende do Go para instalar suas ferramentas."
     echo -e "${YELLOW}    Por favor, instale o Go e tente novamente."
     echo -e "${CYAN}    Instruções de instalação: https://go.dev/doc/install${RESET}"
@@ -75,31 +75,31 @@ verificar_instalar_dependencias() {
   local system_deps=("curl" "wget" "unzip")
   for dep in "${system_deps[@]}"; do
     if ! command -v "$dep" &> /dev/null; then
-      echo -ne "${YELLOW}[⏳] Instalando $dep...${RESET}"
+      # Removido: echo -ne "${YELLOW}⏳ Instalando $dep...${RESET}"
       if command -v apt-get &> /dev/null; then
         if ! sudo apt-get update &> /dev/null || ! sudo apt-get install -y "$dep" &> /dev/null; then
-          echo -e "\r${RED}[❌] Falha ao instalar $dep.   ${RESET}"
+          echo -e "\r${RED}❌ Falha ao instalar $dep.   ${RESET}"
           echo -e "${RED}    Por favor, instale $dep manualmente e tente novamente.${RESET}"
           exit 1
         fi
       elif command -v yum &> /dev/null; then
         if ! sudo yum install -y "$dep" &> /dev/null; then
-          echo -e "\r${RED}[❌] Falha ao instalar $dep.   ${RESET}"
+          echo -e "\r${RED}❌ Falha ao instalar $dep.   ${RESET}"
           echo -e "${RED}    Por favor, instale $dep manualmente e tente novamente.${RESET}"
           exit 1
         fi
       elif command -v pacman &> /dev/null; then
         if ! sudo pacman -S --noconfirm "$dep" &> /dev/null; then
-          echo -e "\r${RED}[❌] Falha ao instalar $dep.   ${RESET}"
+          echo -e "\r${RED}❌ Falha ao instalar $dep.   ${RESET}"
           echo -e "${RED}    Por favor, instale $dep manualmente e tente novamente.${RESET}"
           exit 1
         fi
       else
-        echo -e "\r${RED}[❌] Sistema não suportado para instalação automática de $dep.${RESET}"
+        echo -e "\r${RED}❌ Sistema não suportado para instalação automática de $dep.${RESET}"
         echo -e "${RED}    Por favor, instale $dep manualmente e tente novamente.${RESET}"
         exit 1
       fi
-      echo -e "\r${GREEN}[✅] $dep instalado com sucesso!${RESET}"
+      echo -e "\r${GREEN}✅ $dep instalado com sucesso!${RESET}"
     fi
   done
 
@@ -119,29 +119,27 @@ verificar_instalar_dependencias() {
     ["assetfinder"]="go install github.com/tomnomnom/assetfinder@latest"
     ["github-subdomains"]="go install github.com/gwen001/github-subdomains@latest"
     ["amass"]="go install github.com/owasp-amass/amass/v4/...@latest"
-    ["gau"]="go install github.com/lc/gau/v2/cmd/gau@latest"
-    ["unfurl"]="go install github.com/tomnomnom/unfurl@latest"
   )
 
   local tools_installed=false
   for tool in "${!ferramentas[@]}"; do
     if ! command -v "$tool" &> /dev/null; then
       tools_installed=true
-      echo -ne "${YELLOW}[⏳] Instalando $tool...${RESET}"
+      # Removido: echo -ne "${YELLOW}⏳ Instalando $tool...${RESET}"
 
       if ! eval "${ferramentas[$tool]}" > /dev/null 2>&1; then
-        echo -e "\r${RED}[❌] Falha ao instalar $tool.   ${RESET}"
+        echo -e "\r${RED}❌ Falha ao instalar $tool.   ${RESET}"
         # A verificação de Go já foi feita, então o erro é provavelmente de conexão.
         echo -e "${RED}    Verifique sua conexão com a internet e tente novamente.${RESET}"
         exit 1
       fi
 
-      echo -e "\r${GREEN}[✅] $tool instalado com sucesso!${RESET}"
+      echo -e "\r${GREEN}✅ $tool instalado com sucesso!${RESET}"
     fi
   done
 
   if ! command -v findomain &> /dev/null; then
-    echo -ne "${YELLOW}[⏳] Instalando findomain...${RESET}"
+    # Removido: echo -ne "${YELLOW}⏳ Instalando findomain...${RESET}"
     temp_dir=$(mktemp -d)
 
     if ! ( wget -q "https://github.com/findomain/findomain/releases/latest/download/findomain-linux.zip" -O "$temp_dir/findomain.zip" && \
@@ -156,12 +154,12 @@ verificar_instalar_dependencias() {
 
     rm -rf "$temp_dir"
     tools_installed=true
-    echo -e "\r${GREEN}[✅] findomain instalado com sucesso!${RESET}"
+    echo -e "\r${GREEN}✅ findomain instalado com sucesso!${RESET}"
   fi
 
   # Se alguma ferramenta foi instalada E o PATH do usuário não estava configurado, mostra a instrução.
   if [ "$tools_installed" = true ] && [ "$path_needs_update" = true ]; then
-    echo -e "\n${YELLOW}[⚠️] Atenção: Para que as ferramentas funcionem permanentemente, seu PATH precisa ser atualizado.${RESET}"
+    echo -e "\n${YELLOW}⚠️ Atenção: Para que as ferramentas funcionem permanentemente, seu PATH precisa ser atualizado.${RESET}"
     echo -e "${YELLOW}    Execute o comando abaixo e reinicie seu terminal:${RESET}"
     echo -e "${CYAN}    echo 'export PATH=\$PATH:\$HOME/go/bin' >> ~/.bashrc${RESET}"
     echo -e "${YELLOW}    (Se você usa ZSH ou outro shell, ajuste o comando para ~/.zshrc ou equivalente).${RESET}"
@@ -235,7 +233,7 @@ save_key_permanently() {
 get_user_input() {
   while true;
  do
-    echo -ne "${CYAN}[?] Digite o domínio alvo: ${RESET}"
+    echo -ne "${CYAN}🔍 Digite o domínio alvo: ${RESET}"
     read alvo
     if [[ "$alvo" =~ ^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
       break
@@ -255,34 +253,35 @@ get_user_input() {
   ghtoken_valido=false
   # 1. Tenta usar a variável de ambiente primeiro
   if [[ -n "$GITHUB_TOKEN" ]]; then
-    echo -e "${BLUE}[+] Verificando GitHub Token...${RESET}"
+    echo -e "${BLUE}🛠️ Verificando GitHub Token...${RESET}"
     if validar_github_token "$GITHUB_TOKEN"; then
       ghtoken=$GITHUB_TOKEN
       ghtoken_valido=true
-      echo -e "${GREEN}[✅] GitHub Token válido!${RESET}"
+      echo -e "${GREEN}✅ GitHub Token válido!${RESET}"
     else
-      echo -e "${RED}[❌] O GitHub Token é inválido.${RESET}"
+      echo -e "${RED}❌ O GitHub Token é inválido.${RESET}"
     fi
   fi
 
   # 2. Se o token não for válido, entra no loop para pedir ao usuário
   if ! $ghtoken_valido; then
     while true; do
-      echo -ne "${CYAN}[?] Digite seu GitHub Token (a entrada ficará oculta): ${RESET}"
+      # --- MODIFICAÇÃO PEDIDA: Mensagem pedindo API do Github em amarelo ---
+      echo -ne "${YELLOW}🔑 Digite seu GitHub Token (a entrada ficará oculta): ${RESET}"
       read -s ghtoken
       echo
 
       if validar_github_token "$ghtoken"; then
-        echo -e "${GREEN}[✅] GitHub Token válido!${RESET}"
+        echo -e "${GREEN}✅ GitHub Token válido!${RESET}"
         # Pergunta se quer salvar o novo token válido
-        echo -ne "${YELLOW}[?] Deseja salvar este token permanentemente em seu shell para uso futuro? (s/n): ${RESET}"
+        echo -ne "${YELLOW}❔ Deseja salvar este token permanentemente em seu shell para uso futuro? (s/n): ${RESET}"
         read -r save
         if [[ $save == "s" ]]; then
           save_key_permanently "GITHUB_TOKEN" "$ghtoken"
         fi
         break # Sai do loop de entrada do usuário
       else
-        echo -e "${RED}[❌] GitHub Token inválido. Tente novamente.${RESET}"
+        echo -e "${RED}❌ GitHub Token inválido. Tente novamente.${RESET}"
       fi
     done
   fi
@@ -297,34 +296,35 @@ get_user_input() {
   pdcp_api_key_valido=false
   # 1. Tenta usar a variável de ambiente
   if [[ -n "$PDCP_API_KEY" ]]; then
-    echo -e "${BLUE}[+] Verificando Chaos API Key...${RESET}"
+    echo -e "${BLUE}🛠️ Verificando Chaos API Key...${RESET}"
     if validar_chaos_token "$PDCP_API_KEY"; then
       pdcp_api_key=$PDCP_API_KEY
       pdcp_api_key_valido=true
-      echo -e "${GREEN}[✅] Chaos API Key válida!${RESET}"
+      echo -e "${GREEN}✅ Chaos API Key válida!${RESET}"
     else
-      echo -e "${RED}[❌] A Chaos key é inválida.${RESET}"
+      echo -e "${RED}❌ A Chaos key é inválida.${RESET}"
     fi
   fi
 
   # 2. Se a chave não for válida, entra no loop para pedir ao usuário
   if ! $pdcp_api_key_valido; then
     while true; do
-      echo -ne "${CYAN}[?] Digite sua PDCP_API_KEY do Chaos (a entrada ficará oculta): ${RESET}"
+      # --- MODIFICAÇÃO PEDIDA: Mensagem pedindo API do Chaos em amarelo ---
+      echo -ne "${YELLOW}🔑 Digite sua PDCP_API_KEY do Chaos (a entrada ficará oculta): ${RESET}"
       read -s pdcp_api_key
       echo
 
       if validar_chaos_token "$pdcp_api_key"; then
-        echo -e "${GREEN}[✅] Chaos API Key válida!${RESET}"
+        echo -e "${GREEN}✅ Chaos API Key válida!${RESET}"
         # Pergunta se quer salvar a nova chave válida
-        echo -ne "${YELLOW}[?] Deseja salvar esta chave permanentemente em seu shell para uso futuro? (s/n): ${RESET}"
+        echo -ne "${YELLOW}❔ Deseja salvar esta chave permanentemente em seu shell para uso futuro? (s/n): ${RESET}"
         read -r save
         if [[ $save == "s" ]]; then
           save_key_permanently "PDCP_API_KEY" "$pdcp_api_key"
         fi
         break # Sai do loop de entrada do usuário
       else
-        echo -e "${RED}[❌] Chaos key inválida. Tente novamente.${RESET}"
+        echo -e "${RED}❌ Chaos key inválida. Tente novamente.${RESET}"
       fi
     done
   fi
@@ -353,7 +353,6 @@ run_recon_tools() {
       "findomain")   command_to_run="findomain -t $alvo -q -u $output_dir/subs_findomain.txt" ;;
       "amass")       command_to_run="amass enum -passive -config amass_config.yaml -d $alvo -silent -timeout 10 -o $output_dir/subs_amass.txt" ;;
       "github-subdomains") command_to_run="github-subdomains -d $alvo -t $ghtoken -o $output_dir/subs_github.txt" ;;
-      "gau")         command_to_run="gau $alvo --subs --blacklist png,jpg,jpeg,gif,css,svg,ico,woff,ttf,mp4,avi --o $output_dir/subs_gau.txt --threads 7 --timeout 10" ;;
       *) return 1 ;;
     esac
 
@@ -363,19 +362,19 @@ run_recon_tools() {
         kill "$pid" &> /dev/null
         wait "$pid" 2>/dev/null || true
       fi
-      echo -e "\r${RED}[❌] Erro fatal ao executar ${tool_name}! Causa:${RESET}\n"
+      echo -e "\r${RED}❌ Erro fatal ao executar ${tool_name}! Causa:${RESET}\n"
       cat "$log_file"
       echo -e "\n"
       exit 255
     fi
     # A animação de loading irá sobrescrever esta mensagem, que piscará brevemente.
-    echo -e "\r${GREEN}[✅] ${tool_name} concluído.${RESET}"
+    echo -e "\r${GREEN}✅ ${tool_name} concluído.${RESET}"
   }
 
   # Grupo 1: Ferramentas rápidas (execução com paralelismo máximo)
   local fast_tools=("subfinder" "assetfinder" "findomain" "github-subdomains" "chaos")
   # Grupo 2: Ferramentas mais pesadas/demoradas (execução com paralelismo limitado)
-  local heavy_tools=("amass" "gau")
+  local heavy_tools=("amass")
 
   export alvo ghtoken output_dir GREEN RED RESET
   export -f run_recon_tool
@@ -388,11 +387,13 @@ run_recon_tools() {
 }
 
 
-
+# ==============================================================================
+# === INÍCIO DA SEÇÃO MODIFICADA ===============================================
+# ==============================================================================
 
 # Processa e consolida os resultados de todas as ferramentas.
 process_results() {
-  echo -e "${BLUE}[+] Juntando, limpando e ordenando resultados...${RESET}"
+  echo -e "${BLUE}🗃️ Juntando, limpando e ordenando resultados...${RESET}"
 
   local base_filename="${alvo}.txt"
   local output_filename="${base_filename}"
@@ -404,11 +405,25 @@ process_results() {
     ((counter++))
   done
 
-  cat "$output_dir"/subs_*.txt 2>/dev/null | unfurl -u domains | sed 's/^\*\.//g' | sort -u > "$output_filename"
+  # Consolida todos os resultados em um único arquivo, remove wildcards e garante unicidade
+  cat "$output_dir"/subs_*.txt 2>/dev/null | sed 's/^\*\.//g' | sort -u > "$output_filename"
 
-  echo -e "${GREEN}[✔️] Finalizado! Subdomínios únicos salvos em ${BOLD}${output_filename}${RESET}"
+  echo -e "${GREEN}☑️ Finalizado! Subdomínios únicos salvos em ${BOLD}${output_filename}${RESET}"
+
+  # ----> NOVA FUNCIONALIDADE <----
+  # Conta quantos subdomínios foram salvos no arquivo final e exibe para o usuário.
+  # Usamos '<' para que o wc -l retorne apenas o número, sem o nome do arquivo.
+  local total_subdominios=$(wc -l < "$output_filename")
+  echo -e "${GREEN}📊 Foram encontrados ${BOLD}${total_subdominios}${RESET}${GREEN} subdomínios únicos.${RESET}"
+  # ----> FIM DA NOVA FUNCIONALIDADE <----
+
   echo -e "${MAGENTA}${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
 }
+
+# ==============================================================================
+# === FIM DA SEÇÃO MODIFICADA ==================================================
+# ==============================================================================
+
 
 # === Função Principal de Orquestração ===
 subdomain_discovery() {
