@@ -17,7 +17,7 @@ else
 fi
 
 # === Versão atual do script ===
-SCRIPT_VERSION="1.9.3" # Recomendo atualizar para 1.9.4 ou 2.0.0 com a nova feature
+SCRIPT_VERSION="1.9.4" # Recomendo atualizar para 1.9.4 ou 2.0.0 com a nova feature
 
 # === Verificação de atualização remota ===
 verificar_versao_remota() {
