@@ -17,11 +17,11 @@ else
 fi
 
 # === Versão atual do script ===
-SCRIPT_VERSION="1.9.4" # Recomendo atualizar para 1.9.4 ou 2.0.0 com a nova feature
+SCRIPT_VERSION="1.9.4" 
 
 # === Verificação de atualização remota ===
 verificar_versao_remota() {
-  remote_version=$(curl -s https://raw.githubusercontent.com/Lezake/Lezake/refs/heads/main/version.txt)
+  remote_version=$(curl -s https://raw.githubusercontent.com/LezakeRecon/Lezake/refs/heads/main/version.txt)
   [[ -z "$remote_version" ]] && return
   if [[ "$SCRIPT_VERSION" != "$remote_version" ]]; then
     echo -e "${YELLOW}⚠️ Atualização disponível para Lezake (de ${SCRIPT_VERSION} → ${remote_version}).${RESET}"
