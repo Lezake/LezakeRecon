@@ -10,11 +10,11 @@ BOLD_OFF=$'\033[22m'        # Desativa o negrito explicitamente
 RESET=$'\033[0m'            # Reseta cor e estilo
 
 # === Versão atual do script ===
-SCRIPT_VERSION="1.9.9"
+SCRIPT_VERSION="1.9.9.9"
 
 # === Verificação de atualização remota ===
 verificar_versao_remota() {
-  # Mantida a URL original conforme solicitado
+
   remote_version=$(curl -s https://raw.githubusercontent.com/Lezake/LezakeRecon/refs/heads/main/version.txt  )
   [[ -z "$remote_version" ]] && return
   if [[ "$SCRIPT_VERSION" != "$remote_version" ]]; then
@@ -36,11 +36,11 @@ loading_animation() {
   done
 }
 
-# === Banner Lezake (arte ASCII em ROXO - Versão com ░ substituído - CORRIGIDO) ===
+# Banner Lezake
 show_banner() {
   clear
   # Exibe o banner na cor ROXA brilhante definida no início
-  printf '%s\n' "${PURPLE}"
+  printf '%s' "${PURPLE}"
   cat << 'EOF'
  █████                                     █████
 ░░███                                     ░░███
@@ -51,9 +51,10 @@ show_banner() {
  ███████████░░██████   █████████░░████████ ████ █████░░██████
 ░░░░░░░░░░░  ░░░░░░   ░░░░░░░░░  ░░░░░░░░ ░░░░ ░░░░░  ░░░░░░
 EOF
-  printf '%s\n' "${RESET}"
+  printf '%s' "${RESET}"
   # Centraliza o nome de usuário, mantém em cinza para contraste, com @leo_zmns em negrito
-  printf '%50s\n' "@leo_zmns" | sed "s/.*/${GRAY_LIGHT}${BOLD_OFF}&${RESET}/" | sed "s/@leo_zmns/${BOLD_ON}@leo_zmns${RESET}/"
+  printf '\n%50s\n' "@leo_zmns" | sed "s/.*/${GRAY_LIGHT}${BOLD_OFF}&${RESET}/" | sed "s/@leo_zmns/${BOLD_ON}@leo_zmns${RESET}/"
+
   # Linha horizontal em cinza escuro para finalizar o cabeçalho
   printf '%s\n' "${GRAY_DARK}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
 }
@@ -105,7 +106,7 @@ verificar_instalar_dependencias() {
 
   # Verifica se o PATH precisa ser atualizado e o atualiza para a sessão atual
   local path_needs_update=false
-  if [[ ":$PATH:" != ":$HOME/go/bin:"* ]]; then
+  if [[ ":$PATH:" != *":$HOME/go/bin:"* ]]; then
     path_needs_update=true
     export PATH="$PATH:$HOME/go/bin"
   fi
@@ -149,17 +150,34 @@ verificar_instalar_dependencias() {
     printf '\r%s\n' "${GRAY_LIGHT}${BOLD_OFF}✅ findomain instalado com sucesso!${RESET}"
   fi
 
-  # Se alguma ferramenta foi instalada E o PATH do usuário não estava configurado
+  # Se alguma ferramenta foi instalada E o PATH do usuário não estava configurado,
+  # adiciona automaticamente ao arquivo de configuração do shell correto.
   if [ "$tools_installed" = true ] && [ "$path_needs_update" = true ]; then
-    printf '\n%s\n' "${GRAY_LIGHT}${BOLD_OFF}⚠️ Atenção: Para que as ferramentas funcionem permanentemente, seu PATH precisa ser atualizado.${RESET}"
-    printf '%s\n' "${GRAY_LIGHT}${BOLD_OFF}    Execute o comando abaixo e reinicie seu terminal:${RESET}"
+    local shell_config=""
+    local path_entry=""
 
-    # Suporte ao Fish Shell para instrução do PATH
     if [[ "$SHELL" == */fish ]]; then
-        printf '%s\n' "${GRAY_LIGHT}${BOLD_OFF}    fish_add_path \$HOME/go/bin${RESET}"
+      shell_config="$HOME/.config/fish/config.fish"
+      mkdir -p "$HOME/.config/fish"
+      path_entry="fish_add_path \$HOME/go/bin"
+    elif [[ "$SHELL" == */zsh ]]; then
+      shell_config="$HOME/.zshrc"
+      path_entry="export PATH=\$PATH:\$HOME/go/bin"
+    elif [[ "$SHELL" == */bash ]]; then
+      shell_config="$HOME/.bashrc"
+      path_entry="export PATH=\$PATH:\$HOME/go/bin"
     else
-        printf '%s\n' "${GRAY_LIGHT}${BOLD_OFF}    echo 'export PATH=\$PATH:\$HOME/go/bin' >> ~/.bashrc${RESET}"
-        printf '%s\n' "${GRAY_LIGHT}${BOLD_OFF}    (Se você usa ZSH ou outro shell, ajuste o comando para ~/.zshrc ou equivalente).${RESET}"
+      printf '%s\n' "${GRAY_LIGHT}${BOLD_OFF}⚠️ Shell não suportado para configuração automática do PATH.${RESET}"
+      printf '%s\n' "${GRAY_LIGHT}${BOLD_OFF}    Adicione manualmente '\$HOME/go/bin' ao PATH do seu shell.${RESET}"
+      return
+    fi
+
+    touch "$shell_config"
+
+    # Só adiciona se a linha ainda não existir no arquivo de configuração
+    if ! grep -qF "go/bin" "$shell_config"; then
+      printf '\n%s\n%s\n' "# Adicionado pelo Lezake para ferramentas Go" "$path_entry" >> "$shell_config"
+      printf '%s\n' "${GRAY_LIGHT}${BOLD_OFF}✅ PATH atualizado automaticamente em ${shell_config}. Reinicie seu terminal para aplicar.${RESET}"
     fi
   fi
 }
@@ -465,26 +483,79 @@ EOF
   process_results
 }
 
+# === Função para atualizar (remover e reinstalar) todas as ferramentas ===
+atualizar_ferramentas() {
+  # Remove silenciosamente as ferramentas existentes
+  local tools_to_remove=("subfinder" "chaos" "assetfinder" "github-subdomains" "amass" "findomain")
+  for tool in "${tools_to_remove[@]}"; do
+    local tool_path
+    tool_path=$(command -v "$tool" 2>/dev/null)
+    if [[ -n "$tool_path" ]]; then
+      rm -f "$tool_path"
+    fi
+  done
+
+  printf '%s\n\n' "${GRAY_LIGHT}${BOLD_OFF}⚙️ Reinstalando todas as ferramentas...${RESET}"
+
+  # Reinstala ferramentas Go
+  declare -A ferramentas_reinstall=(
+    ["subfinder"]="go install github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest"
+    ["chaos"]="go install github.com/projectdiscovery/chaos-client/cmd/chaos@latest"
+    ["assetfinder"]="go install github.com/tomnomnom/assetfinder@latest"
+    ["github-subdomains"]="go install github.com/gwen001/github-subdomains@latest"
+    ["amass"]="go install github.com/owasp-amass/amass/v4/...@latest"
+  )
+
+  for tool in "${!ferramentas_reinstall[@]}"; do
+    if ! eval "${ferramentas_reinstall[$tool]}" > /dev/null 2>&1; then
+      printf '%s\n' "${GRAY_LIGHT}${BOLD_OFF}❌ Falha ao reinstalar $tool.${RESET}"
+    else
+      printf '%s\n' "${GRAY_LIGHT}${BOLD_OFF}✅ $tool reinstalado com sucesso!${RESET}"
+    fi
+  done
+
+  # Reinstala findomain (binário direto)
+  local temp_dir
+  temp_dir=$(mktemp -d)
+  if ( wget -q "https://github.com/findomain/findomain/releases/latest/download/findomain-linux.zip" -O "$temp_dir/findomain.zip" && \
+       unzip -qq "$temp_dir/findomain.zip" -d "$temp_dir" && \
+       chmod +x "$temp_dir/findomain" && \
+       mkdir -p "$HOME/go/bin" && \
+       mv "$temp_dir/findomain" "$HOME/go/bin/" ); then
+    printf '%s\n' "${GRAY_LIGHT}${BOLD_OFF}✅ findomain reinstalado com sucesso!${RESET}"
+  else
+    printf '%s\n' "${GRAY_LIGHT}${BOLD_OFF}❌ Falha ao reinstalar findomain.${RESET}"
+  fi
+  rm -rf "$temp_dir"
+
+  printf '\n%s\n' "${GRAY_LIGHT}${BOLD_OFF}♻️ Atualização de ferramentas concluída!${RESET}"
+  printf '%s\n' "${GRAY_DARK}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
+  sleep 2
+}
+
 # === Menu principal Lezake (clean, elegante) ===
 show_menu() {
   while true; do
     # Chama a função que exibe o banner (agora roxo)
     show_banner
-    printf '\n\n'
 
-    # Menu opções no estilo horizontal (mantido cinza)
-    printf '%s\n\n' "${GRAY_LIGHT}${BOLD_OFF}[1]${RESET} Subdomain Discovery     ${GRAY_LIGHT}${BOLD_OFF}[0] Sair${RESET}"
+    # Menu opções (mantido cinza)
+    printf '%s\n' "${GRAY_LIGHT}${BOLD_OFF}[1]${RESET} Subdomain Discovery     ${GRAY_LIGHT}${BOLD_OFF}[2]${RESET} Atualizar ferramentas"
+    printf '\n%s\n\n' "${GRAY_LIGHT}${BOLD_OFF}[0]${RESET} Sair"
     printf '%s' "${GRAY_LIGHT}${BOLD_OFF}[?] Escolha uma opção: ${RESET}"
 
     read opcao
 
     case "$opcao" in
       1)
-        # Limpa apenas as linhas do menu e prompt antes de prosseguir
-        tput cuu 3 # Move o cursor três linhas acima (menu, linha em branco, prompt)
-        tput ed   # Limpa da posição do cursor até o final da tela
+        # Redesenha o banner limpo (clear + banner) antes de prosseguir
+        show_banner
         subdomain_discovery
         break
+        ;;
+      2)
+        show_banner
+        atualizar_ferramentas
         ;;
       0)
         exit 0
