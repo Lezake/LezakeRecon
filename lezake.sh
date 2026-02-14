@@ -1,13 +1,13 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -eo pipefail
 
 # === Códigos de cor ANSI ===
-GRAY_LIGHT='\e[37m'      # Cor cinza claro (texto comum)
-GRAY_DARK='\e[90m'       # Cor cinza escuro (linhas e detalhes)
-PURPLE='\e[1;35m'        # Cor ROXO brilhante (para o banner)
-BOLD_ON='\e[1m'          # Ativa o negrito
-BOLD_OFF='\e[22m'        # Desativa o negrito explicitamente
-RESET='\e[0m'            # Reseta cor e estilo
+GRAY_LIGHT=$'\033[37m'      # Cor cinza claro (texto comum)
+GRAY_DARK=$'\033[90m'       # Cor cinza escuro (linhas e detalhes)
+PURPLE=$'\033[1;35m'        # Cor ROXO brilhante (para o banner)
+BOLD_ON=$'\033[1m'          # Ativa o negrito
+BOLD_OFF=$'\033[22m'        # Desativa o negrito explicitamente
+RESET=$'\033[0m'            # Reseta cor e estilo
 
 # === Versão atual do script ===
 SCRIPT_VERSION="1.9.9"
@@ -19,7 +19,7 @@ verificar_versao_remota() {
   [[ -z "$remote_version" ]] && return
   if [[ "$SCRIPT_VERSION" != "$remote_version" ]]; then
     # Aplica cinza claro e desativa negrito explicitamente
-    echo -e "${GRAY_LIGHT}${BOLD_OFF}⚠️ Atualização disponível para Lezake (de ${SCRIPT_VERSION} → ${remote_version}).${RESET}"
+    printf '%s\n' "${GRAY_LIGHT}${BOLD_OFF}⚠️ Atualização disponível para Lezake (de ${SCRIPT_VERSION} → ${remote_version}).${RESET}"
     exit 1
   fi
 }
@@ -30,7 +30,7 @@ loading_animation() {
   while :; do
     for c in "${chars[@]}"; do
       # Aplica cinza claro e desativa negrito explicitamente
-      echo -ne "\r${GRAY_LIGHT}${BOLD_OFF}⏳ Coletando... $c${RESET}"
+      printf '\r%s' "${GRAY_LIGHT}${BOLD_OFF}⏳ Coletando... $c${RESET}"
       sleep 0.1
     done
   done
@@ -40,7 +40,7 @@ loading_animation() {
 show_banner() {
   clear
   # Exibe o banner na cor ROXA brilhante definida no início
-  echo -e "${PURPLE}"
+  printf '%s\n' "${PURPLE}"
   cat << 'EOF'
  █████                                     █████
 ░░███                                     ░░███
@@ -51,21 +51,21 @@ show_banner() {
  ███████████░░██████   █████████░░████████ ████ █████░░██████
 ░░░░░░░░░░░  ░░░░░░   ░░░░░░░░░  ░░░░░░░░ ░░░░ ░░░░░  ░░░░░░
 EOF
-  echo -e "${RESET}"
+  printf '%s\n' "${RESET}"
   # Centraliza o nome de usuário, mantém em cinza para contraste, com @leo_zmns em negrito
-  printf '%50s\n' "@leo_zmns" | sed "s/.*/$(echo -e "${GRAY_LIGHT}${BOLD_OFF}")&$(echo -e "${RESET}")/" | sed "s/@leo_zmns/$(echo -e "${BOLD_ON}")@leo_zmns$(echo -e "${RESET}")/"
+  printf '%50s\n' "@leo_zmns" | sed "s/.*/${GRAY_LIGHT}${BOLD_OFF}&${RESET}/" | sed "s/@leo_zmns/${BOLD_ON}@leo_zmns${RESET}/"
   # Linha horizontal em cinza escuro para finalizar o cabeçalho
-  echo -e "${GRAY_DARK}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
+  printf '%s\n' "${GRAY_DARK}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
 }
 
 # === Verificação e instalação automática de dependências ===
 verificar_instalar_dependencias() {
   # Verifica primeiro se o Go está instalado
   if ! command -v go &> /dev/null; then
-    echo -e "${GRAY_LIGHT}${BOLD_OFF}❌ Erro Crítico: A linguagem Go não está instalada ou não está no PATH.${RESET}"
-    echo -e "${GRAY_LIGHT}${BOLD_OFF}    O Lezake depende do Go para instalar suas ferramentas.${RESET}"
-    echo -e "${GRAY_LIGHT}${BOLD_OFF}    Por favor, instale o Go e tente novamente.${RESET}"
-    echo -e "${GRAY_LIGHT}${BOLD_OFF}    Instruções de instalação: https://go.dev/doc/install    ${RESET}"
+    printf '%s\n' "${GRAY_LIGHT}${BOLD_OFF}❌ Erro Crítico: A linguagem Go não está instalada ou não está no PATH.${RESET}"
+    printf '%s\n' "${GRAY_LIGHT}${BOLD_OFF}    O Lezake depende do Go para instalar suas ferramentas.${RESET}"
+    printf '%s\n' "${GRAY_LIGHT}${BOLD_OFF}    Por favor, instale o Go e tente novamente.${RESET}"
+    printf '%s\n' "${GRAY_LIGHT}${BOLD_OFF}    Instruções de instalação: https://go.dev/doc/install    ${RESET}"
     exit 1
   fi
 
@@ -75,28 +75,28 @@ verificar_instalar_dependencias() {
     if ! command -v "$dep" &> /dev/null; then
       if command -v apt-get &> /dev/null; then
         if ! sudo apt-get update &> /dev/null || ! sudo apt-get install -y "$dep" &> /dev/null; then
-          echo -e "\r${GRAY_LIGHT}${BOLD_OFF}❌ Falha ao instalar $dep.   ${RESET}"
-          echo -e "${GRAY_LIGHT}${BOLD_OFF}    Por favor, instale $dep manualmente e tente novamente.${RESET}"
+          printf '\r%s\n' "${GRAY_LIGHT}${BOLD_OFF}❌ Falha ao instalar $dep.   ${RESET}"
+          printf '%s\n' "${GRAY_LIGHT}${BOLD_OFF}    Por favor, instale $dep manualmente e tente novamente.${RESET}"
           exit 1
         fi
       elif command -v yum &> /dev/null; then
         if ! sudo yum install -y "$dep" &> /dev/null; then
-          echo -e "\r${GRAY_LIGHT}${BOLD_OFF}❌ Falha ao instalar $dep.   ${RESET}"
-          echo -e "${GRAY_LIGHT}${BOLD_OFF}    Por favor, instale $dep manualmente e tente novamente.${RESET}"
+          printf '\r%s\n' "${GRAY_LIGHT}${BOLD_OFF}❌ Falha ao instalar $dep.   ${RESET}"
+          printf '%s\n' "${GRAY_LIGHT}${BOLD_OFF}    Por favor, instale $dep manualmente e tente novamente.${RESET}"
           exit 1
         fi
       elif command -v pacman &> /dev/null; then
         if ! sudo pacman -S --noconfirm "$dep" &> /dev/null; then
-          echo -e "\r${GRAY_LIGHT}${BOLD_OFF}❌ Falha ao instalar $dep.   ${RESET}"
-          echo -e "${GRAY_LIGHT}${BOLD_OFF}    Por favor, instale $dep manualmente e tente novamente.${RESET}"
+          printf '\r%s\n' "${GRAY_LIGHT}${BOLD_OFF}❌ Falha ao instalar $dep.   ${RESET}"
+          printf '%s\n' "${GRAY_LIGHT}${BOLD_OFF}    Por favor, instale $dep manualmente e tente novamente.${RESET}"
           exit 1
         fi
       else
-        echo -e "\r${GRAY_LIGHT}${BOLD_OFF}❌ Sistema não suportado para instalação automática de $dep.${RESET}"
-        echo -e "${GRAY_LIGHT}${BOLD_OFF}    Por favor, instale $dep manualmente e tente novamente.${RESET}"
+        printf '\r%s\n' "${GRAY_LIGHT}${BOLD_OFF}❌ Sistema não suportado para instalação automática de $dep.${RESET}"
+        printf '%s\n' "${GRAY_LIGHT}${BOLD_OFF}    Por favor, instale $dep manualmente e tente novamente.${RESET}"
         exit 1
       fi
-      echo -e "\r${GRAY_LIGHT}${BOLD_OFF}✅ $dep instalado com sucesso!${RESET}"
+      printf '\r%s\n' "${GRAY_LIGHT}${BOLD_OFF}✅ $dep instalado com sucesso!${RESET}"
     fi
   done
 
@@ -123,11 +123,11 @@ verificar_instalar_dependencias() {
     if ! command -v "$tool" &> /dev/null; then
       tools_installed=true
       if ! eval "${ferramentas[$tool]}" > /dev/null 2>&1; then
-        echo -e "\r${GRAY_LIGHT}${BOLD_OFF}❌ Falha ao instalar $tool.   ${RESET}"
-        echo -e "${GRAY_LIGHT}${BOLD_OFF}    Verifique sua conexão com a internet e tente novamente.${RESET}"
+        printf '\r%s\n' "${GRAY_LIGHT}${BOLD_OFF}❌ Falha ao instalar $tool.   ${RESET}"
+        printf '%s\n' "${GRAY_LIGHT}${BOLD_OFF}    Verifique sua conexão com a internet e tente novamente.${RESET}"
         exit 1
       fi
-      echo -e "\r${GRAY_LIGHT}${BOLD_OFF}✅ $tool instalado com sucesso!${RESET}"
+      printf '\r%s\n' "${GRAY_LIGHT}${BOLD_OFF}✅ $tool instalado com sucesso!${RESET}"
     fi
   done
 
@@ -139,27 +139,27 @@ verificar_instalar_dependencias() {
            chmod +x "$temp_dir/findomain" && \
            mkdir -p "$HOME/go/bin" && \
            mv "$temp_dir/findomain" "$HOME/go/bin/" ); then
-        echo -e "\r${GRAY_LIGHT}${BOLD_OFF}[❌] Falha ao instalar findomain.${RESET}"
+        printf '\r%s\n' "${GRAY_LIGHT}${BOLD_OFF}[❌] Falha ao instalar findomain.${RESET}"
         rm -rf "$temp_dir"
         exit 1
     fi
 
     rm -rf "$temp_dir"
     tools_installed=true
-    echo -e "\r${GRAY_LIGHT}${BOLD_OFF}✅ findomain instalado com sucesso!${RESET}"
+    printf '\r%s\n' "${GRAY_LIGHT}${BOLD_OFF}✅ findomain instalado com sucesso!${RESET}"
   fi
 
   # Se alguma ferramenta foi instalada E o PATH do usuário não estava configurado
   if [ "$tools_installed" = true ] && [ "$path_needs_update" = true ]; then
-    echo -e "\n${GRAY_LIGHT}${BOLD_OFF}⚠️ Atenção: Para que as ferramentas funcionem permanentemente, seu PATH precisa ser atualizado.${RESET}"
-    echo -e "${GRAY_LIGHT}${BOLD_OFF}    Execute o comando abaixo e reinicie seu terminal:${RESET}"
+    printf '\n%s\n' "${GRAY_LIGHT}${BOLD_OFF}⚠️ Atenção: Para que as ferramentas funcionem permanentemente, seu PATH precisa ser atualizado.${RESET}"
+    printf '%s\n' "${GRAY_LIGHT}${BOLD_OFF}    Execute o comando abaixo e reinicie seu terminal:${RESET}"
 
     # Suporte ao Fish Shell para instrução do PATH
     if [[ "$SHELL" == */fish ]]; then
-        echo -e "${GRAY_LIGHT}${BOLD_OFF}    fish_add_path \$HOME/go/bin${RESET}"
+        printf '%s\n' "${GRAY_LIGHT}${BOLD_OFF}    fish_add_path \$HOME/go/bin${RESET}"
     else
-        echo -e "${GRAY_LIGHT}${BOLD_OFF}    echo 'export PATH=\$PATH:\$HOME/go/bin' >> ~/.bashrc${RESET}"
-        echo -e "${GRAY_LIGHT}${BOLD_OFF}    (Se você usa ZSH ou outro shell, ajuste o comando para ~/.zshrc ou equivalente).${RESET}"
+        printf '%s\n' "${GRAY_LIGHT}${BOLD_OFF}    echo 'export PATH=\$PATH:\$HOME/go/bin' >> ~/.bashrc${RESET}"
+        printf '%s\n' "${GRAY_LIGHT}${BOLD_OFF}    (Se você usa ZSH ou outro shell, ajuste o comando para ~/.zshrc ou equivalente).${RESET}"
     fi
   fi
 }
@@ -196,6 +196,7 @@ save_key_permanently() {
   local key_name="$1"
   local key_value="$2"
   local shell_config_file=""
+  local is_fish=false
 
   # Suporte ao Fish Shell para identificar o arquivo de config correto
   if [[ "$SHELL" == */zsh ]]; then
@@ -205,27 +206,37 @@ save_key_permanently() {
   elif [[ "$SHELL" == */fish ]]; then
     shell_config_file="$HOME/.config/fish/config.fish"
     mkdir -p "$HOME/.config/fish"
+    is_fish=true
   else
-    echo -e "${GRAY_LIGHT}${BOLD_OFF}⚠️ Shell não suportado para salvamento automático. Configure a variável de ambiente manualmente.${RESET}"
+    printf '%s\n' "${GRAY_LIGHT}${BOLD_OFF}⚠️ Shell não suportado para salvamento automático. Configure a variável de ambiente manualmente.${RESET}"
     return
   fi
 
   # Garante que o arquivo de configuração exista
   touch "$shell_config_file"
 
-  # Verifica se a chave já está definida no arquivo para decidir entre atualizar ou adicionar
-  if grep -q "export ${key_name}=" "$shell_config_file"; then
-    # A chave existe, então vamos ATUALIZAR a linha existente
-    echo -e "${GRAY_LIGHT}${BOLD_OFF}⏳ Chave ${key_name} já existe. Atualizando com o novo valor em ${shell_config_file}...${RESET}"
-    # Usa sed para substituir a linha. Cria um backup (.bak) por segurança.
-    sed -i.bak "s|^export ${key_name}=.*|export ${key_name}=\"${key_value}\"|" "$shell_config_file"
-    echo -e "${GRAY_LIGHT}${BOLD_OFF}✅ Chave atualizada! Por favor, reinicie seu terminal ou execute 'source ${shell_config_file}' para aplicar.${RESET}"
+  if $is_fish; then
+    # Fish Shell: usa "set -gx VAR valor" em vez de "export VAR=valor"
+    if grep -q "set -gx ${key_name} " "$shell_config_file"; then
+      printf '%s\n' "${GRAY_LIGHT}${BOLD_OFF}⏳ Chave ${key_name} já existe. Atualizando em ${shell_config_file}...${RESET}"
+      sed -i.bak "s|^set -gx ${key_name} .*|set -gx ${key_name} \"${key_value}\"|" "$shell_config_file"
+      printf '%s\n' "${GRAY_LIGHT}${BOLD_OFF}✅ Chave atualizada! Reinicie seu terminal para aplicar.${RESET}"
+    else
+      printf '%s\n' "${GRAY_LIGHT}${BOLD_OFF}⏳ Adicionando ${key_name} ao seu ${shell_config_file}...${RESET}"
+      printf '\n%s\n%s\n' "# Adicionado pelo script Lezake para automação de chaves de API" "set -gx ${key_name} \"${key_value}\"" >> "$shell_config_file"
+      printf '%s\n' "${GRAY_LIGHT}${BOLD_OFF}✅ Chave salva! Reinicie seu terminal para aplicar.${RESET}"
+    fi
   else
-    # A chave não existe, então vamos ADICIONAR
-    echo -e "${GRAY_LIGHT}${BOLD_OFF}⏳ Adicionando ${key_name} ao seu ${shell_config_file}...${RESET}"
-    # Adiciona o comando de exportação ao final do arquivo
-    echo -e "\n# Adicionado pelo script Lezake para automação de chaves de API\nexport ${key_name}=\"${key_value}\"" >> "$shell_config_file"
-    echo -e "${GRAY_LIGHT}${BOLD_OFF}✅ Chave salva com sucesso! Por favor, reinicie seu terminal ou execute 'source ${shell_config_file}' para aplicar a mudança.${RESET}"
+    # Bash/Zsh: usa "export VAR=valor"
+    if grep -q "export ${key_name}=" "$shell_config_file"; then
+      printf '%s\n' "${GRAY_LIGHT}${BOLD_OFF}⏳ Chave ${key_name} já existe. Atualizando em ${shell_config_file}...${RESET}"
+      sed -i.bak "s|^export ${key_name}=.*|export ${key_name}=\"${key_value}\"|" "$shell_config_file"
+      printf '%s\n' "${GRAY_LIGHT}${BOLD_OFF}✅ Chave atualizada! Reinicie seu terminal ou execute 'source ${shell_config_file}'.${RESET}"
+    else
+      printf '%s\n' "${GRAY_LIGHT}${BOLD_OFF}⏳ Adicionando ${key_name} ao seu ${shell_config_file}...${RESET}"
+      printf '\n%s\n%s\n' "# Adicionado pelo script Lezake para automação de chaves de API" "export ${key_name}=\"${key_value}\"" >> "$shell_config_file"
+      printf '%s\n' "${GRAY_LIGHT}${BOLD_OFF}✅ Chave salva! Reinicie seu terminal ou execute 'source ${shell_config_file}'.${RESET}"
+    fi
   fi
 }
 
@@ -234,12 +245,12 @@ save_key_permanently() {
 get_user_input() {
   while true;
  do
-    echo -ne "${GRAY_LIGHT}${BOLD_OFF}🔍 Digite o domínio alvo: ${RESET}"
+    printf '%s' "${GRAY_LIGHT}${BOLD_OFF}🔍 Digite o domínio alvo: ${RESET}"
     read alvo
     if [[ "$alvo" =~ ^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; then
       break
     else
-      echo -e "${GRAY_LIGHT}${BOLD_OFF}! Domínio inválido. Por favor, insira um domínio válido (ex: google.com).${RESET}"
+      printf '%s\n' "${GRAY_LIGHT}${BOLD_OFF}! Domínio inválido. Por favor, insira um domínio válido (ex: google.com).${RESET}"
     fi
   done
 
@@ -254,13 +265,13 @@ get_user_input() {
   ghtoken_valido=false
   # 1. Tenta usar a variável de ambiente primeiro
   if [[ -n "$GITHUB_TOKEN" ]]; then
-    echo -e "${GRAY_LIGHT}${BOLD_OFF}🛠️ Verificando GitHub Token...${RESET}"
+    printf '%s\n' "${GRAY_LIGHT}${BOLD_OFF}🛠️ Verificando GitHub Token...${RESET}"
     if validar_github_token "$GITHUB_TOKEN"; then
       ghtoken=$GITHUB_TOKEN
       ghtoken_valido=true
-      echo -e "${GRAY_LIGHT}${BOLD_OFF}✅ GitHub Token válido!${RESET}"
+      printf '%s\n' "${GRAY_LIGHT}${BOLD_OFF}✅ GitHub Token válido!${RESET}"
     else
-      echo -e "${GRAY_LIGHT}${BOLD_OFF}❌ O GitHub Token é inválido.${RESET}"
+      printf '%s\n' "${GRAY_LIGHT}${BOLD_OFF}❌ O GitHub Token é inválido.${RESET}"
     fi
   fi
 
@@ -268,21 +279,21 @@ get_user_input() {
   if ! $ghtoken_valido; then
     while true; do
       # Mensagem pedindo API do Github em cinza claro
-      echo -ne "${GRAY_LIGHT}${BOLD_OFF}🔑 Digite seu GitHub Token (a entrada ficará oculta): ${RESET}"
+      printf '%s' "${GRAY_LIGHT}${BOLD_OFF}🔑 Digite seu GitHub Token (a entrada ficará oculta): ${RESET}"
       read -s ghtoken
       echo
 
       if validar_github_token "$ghtoken"; then
-        echo -e "${GRAY_LIGHT}${BOLD_OFF}✅ GitHub Token válido!${RESET}"
+        printf '%s\n' "${GRAY_LIGHT}${BOLD_OFF}✅ GitHub Token válido!${RESET}"
         # Pergunta se quer salvar o novo token válido
-        echo -ne "${GRAY_LIGHT}${BOLD_OFF}❔ Deseja salvar este token permanentemente em seu shell para uso futuro? (s/n): ${RESET}"
+        printf '%s' "${GRAY_LIGHT}${BOLD_OFF}❔ Deseja salvar este token permanentemente em seu shell para uso futuro? (s/n): ${RESET}"
         read -r save
         if [[ $save == "s" ]]; then
           save_key_permanently "GITHUB_TOKEN" "$ghtoken"
         fi
         break # Sai do loop de entrada do usuário
       else
-        echo -e "${GRAY_LIGHT}${BOLD_OFF}❌ GitHub Token inválido. Tente novamente.${RESET}"
+        printf '%s\n' "${GRAY_LIGHT}${BOLD_OFF}❌ GitHub Token inválido. Tente novamente.${RESET}"
       fi
     done
   fi
@@ -298,13 +309,13 @@ get_user_input() {
   pdcp_api_key_valido=false
   # 1. Tenta usar a variável de ambiente
   if [[ -n "$PDCP_API_KEY" ]]; then
-    echo -e "${GRAY_LIGHT}${BOLD_OFF}🛠️ Verificando Chaos API Key...${RESET}"
+    printf '%s\n' "${GRAY_LIGHT}${BOLD_OFF}🛠️ Verificando Chaos API Key...${RESET}"
     if validar_chaos_token "$PDCP_API_KEY"; then
       pdcp_api_key=$PDCP_API_KEY
       pdcp_api_key_valido=true
-      echo -e "${GRAY_LIGHT}${BOLD_OFF}✅ Chaos API Key válida!${RESET}"
+      printf '%s\n' "${GRAY_LIGHT}${BOLD_OFF}✅ Chaos API Key válida!${RESET}"
     else
-      echo -e "${GRAY_LIGHT}${BOLD_OFF}❌ A Chaos key é inválida.${RESET}"
+      printf '%s\n' "${GRAY_LIGHT}${BOLD_OFF}❌ A Chaos key é inválida.${RESET}"
     fi
   fi
 
@@ -312,21 +323,21 @@ get_user_input() {
   if ! $pdcp_api_key_valido; then
     while true; do
       # Mensagem pedindo API do Chaos em cinza claro
-      echo -ne "${GRAY_LIGHT}${BOLD_OFF}🔑 Digite sua PDCP_API_KEY do Chaos (a entrada ficará oculta): ${RESET}"
+      printf '%s' "${GRAY_LIGHT}${BOLD_OFF}🔑 Digite sua PDCP_API_KEY do Chaos (a entrada ficará oculta): ${RESET}"
       read -s pdcp_api_key
       echo
 
       if validar_chaos_token "$pdcp_api_key"; then
-        echo -e "${GRAY_LIGHT}${BOLD_OFF}✅ Chaos API Key válida!${RESET}"
+        printf '%s\n' "${GRAY_LIGHT}${BOLD_OFF}✅ Chaos API Key válida!${RESET}"
         # Pergunta se quer salvar a nova chave válida
-        echo -ne "${GRAY_LIGHT}${BOLD_OFF}❔ Deseja salvar esta chave permanentemente em seu shell para uso futuro? (s/n): ${RESET}"
+        printf '%s' "${GRAY_LIGHT}${BOLD_OFF}❔ Deseja salvar esta chave permanentemente em seu shell para uso futuro? (s/n): ${RESET}"
         read -r save
         if [[ $save == "s" ]]; then
           save_key_permanently "PDCP_API_KEY" "$pdcp_api_key"
         fi
         break # Sai do loop de entrada do usuário
       else
-        echo -e "${GRAY_LIGHT}${BOLD_OFF}❌ Chaos key inválida. Tente novamente.${RESET}"
+        printf '%s\n' "${GRAY_LIGHT}${BOLD_OFF}❌ Chaos key inválida. Tente novamente.${RESET}"
       fi
     done
   fi
@@ -338,7 +349,7 @@ get_user_input() {
 
 # Executa as ferramentas de reconhecimento em paralelo, divididas em grupos.
 run_recon_tools() {
-  echo -e "${GRAY_DARK}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
+  printf '%s\n' "${GRAY_DARK}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
   loading_animation & pid=$!
 
   output_dir=$(mktemp -d)
@@ -364,13 +375,13 @@ run_recon_tools() {
         kill "$pid" &> /dev/null
         wait "$pid" 2>/dev/null || true
       fi
-      echo -e "\r${GRAY_LIGHT}${BOLD_OFF}❌ Erro fatal ao executar ${tool_name}! Causa:${RESET}\n"
+      printf '\r%s\n\n' "${GRAY_LIGHT}${BOLD_OFF}❌ Erro fatal ao executar ${tool_name}! Causa:${RESET}"
       cat "$log_file"
-      echo -e "\n"
+      printf '\n'
       exit 255
     fi
     # A animação de loading irá sobrescrever esta mensagem, que piscará brevemente.
-    echo -e "\r${GRAY_LIGHT}${BOLD_OFF}✅ ${tool_name} concluído.${RESET}"
+    printf '\r%s\n' "${GRAY_LIGHT}${BOLD_OFF}✅ ${tool_name} concluído.${RESET}"
   }
 
   # Grupo 1: Ferramentas rápidas (execução com paralelismo máximo)
@@ -382,16 +393,19 @@ run_recon_tools() {
   export -f run_recon_tool
 
   # As mensagens de execução de grupo foram removidas a pedido do usuário para evitar conflito com a animação.
-  printf "%s\n" "${fast_tools[@]}" | xargs -P $(nproc) -I {} bash -c 'run_recon_tool "{}"'
+  local cores
+  cores=$(nproc 2>/dev/null || grep -c ^processor /proc/cpuinfo 2>/dev/null || echo 4)
+
+  printf "%s\n" "${fast_tools[@]}" | xargs -P "$cores" -I {} bash -c 'run_recon_tool "{}"'
   printf "%s\n" "${heavy_tools[@]}" | xargs -P 1 -I {} bash -c 'run_recon_tool "{}"'
 
-  echo -e "${GRAY_DARK}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
+  printf '%s\n' "${GRAY_DARK}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
 }
 
 
 # === Seção de Processamento de Resultados ===
 process_results() {
-  echo -e "${GRAY_LIGHT}${BOLD_OFF}🗃️ Juntando, limpando e ordenando resultados...${RESET}"
+  printf '%s\n' "${GRAY_LIGHT}${BOLD_OFF}🗃️ Juntando, limpando e ordenando resultados...${RESET}"
 
   local base_filename="${alvo}.txt"
   local output_filename="${base_filename}"
@@ -403,16 +417,17 @@ process_results() {
     ((counter++))
   done
 
-  # Consolida todos os resultados em um único arquivo, remove wildcards e garante unicidade
-  cat "$output_dir"/subs_*.txt 2>/dev/null | sed 's/^\*\.//g' | sort -u > "$output_filename"
+  # Consolida todos os resultados em um único arquivo, remove wildcards,
+  # filtra saídas de grafo do Amass (ASN, Netblock, IPAddress, etc.) e garante unicidade.
+  cat "$output_dir"/subs_*.txt 2>/dev/null | sed 's/^\*\.//g' | grep -v ' --> ' | sort -u > "$output_filename"
 
-  echo -e "${GRAY_LIGHT}${BOLD_OFF}☑️ Finalizado! Subdomínios únicos salvos em ${RESET}${GRAY_LIGHT}${BOLD_OFF}${output_filename}${RESET}"
+  printf '%s\n' "${GRAY_LIGHT}${BOLD_OFF}☑️ Finalizado! Subdomínios únicos salvos em ${RESET}${GRAY_LIGHT}${BOLD_OFF}${output_filename}${RESET}"
 
   # Conta quantos subdomínios foram salvos no arquivo final e exibe para o usuário.
   local total_subdominios=$(wc -l < "$output_filename")
-  echo -e "${GRAY_LIGHT}${BOLD_OFF}📊 Foram encontrados ${RESET}${GRAY_LIGHT}${BOLD_OFF}${total_subdominios}${RESET}${GRAY_LIGHT}${BOLD_OFF} subdomínios únicos.${RESET}"
+  printf '%s\n' "${GRAY_LIGHT}${BOLD_OFF}📊 Foram encontrados ${RESET}${GRAY_LIGHT}${BOLD_OFF}${total_subdominios}${RESET}${GRAY_LIGHT}${BOLD_OFF} subdomínios únicos.${RESET}"
 
-  echo -e "${GRAY_DARK}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
+  printf '%s\n' "${GRAY_DARK}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
 }
 
 
@@ -444,7 +459,7 @@ EOF
     wait "$pid" 2>/dev/null || true
     pid="" # Evita que a função cleanup tente matar o processo novamente
     # Limpa a linha que a animação estava usando
-    echo -ne "\r\033[K"
+    printf '\r\033[K'
   fi
 
   process_results
@@ -455,11 +470,11 @@ show_menu() {
   while true; do
     # Chama a função que exibe o banner (agora roxo)
     show_banner
-    echo -e "\n"
+    printf '\n\n'
 
     # Menu opções no estilo horizontal (mantido cinza)
-    echo -e "${GRAY_LIGHT}${BOLD_OFF}[1]${RESET} Subdomain Discovery     ${GRAY_LIGHT}${BOLD_OFF}[0] Sair${RESET}\n"
-    echo -ne "${GRAY_LIGHT}${BOLD_OFF}[?] Escolha uma opção: ${RESET}"
+    printf '%s\n\n' "${GRAY_LIGHT}${BOLD_OFF}[1]${RESET} Subdomain Discovery     ${GRAY_LIGHT}${BOLD_OFF}[0] Sair${RESET}"
+    printf '%s' "${GRAY_LIGHT}${BOLD_OFF}[?] Escolha uma opção: ${RESET}"
 
     read opcao
 
@@ -475,7 +490,7 @@ show_menu() {
         exit 0
         ;;
       *)
-        echo -e "${GRAY_LIGHT}${BOLD_OFF}[!] Opção inválida.${RESET}"
+        printf '%s\n' "${GRAY_LIGHT}${BOLD_OFF}[!] Opção inválida.${RESET}"
         sleep 1.5
         ;;
     esac
