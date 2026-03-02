@@ -49,7 +49,7 @@ Utilizado para consultas ao banco de dados do Chaos.
 
 ```bash
 # Clonar o repositório
-git clone https://github.com/Lezake/Lezake.git
+git clone https://github.com/Lezake/LezakeRecon.git
 
 # Acessar o diretório
 cd Lezake
