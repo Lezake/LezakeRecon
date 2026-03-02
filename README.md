@@ -3,7 +3,6 @@
 > Automação Inteligente para Recon em Pentests
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Shell](https://img.shields.io/badge/shell-bash-blue.svg)]()
 
 ---
 
