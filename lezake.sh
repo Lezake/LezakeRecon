@@ -53,7 +53,7 @@ show_banner() {
 EOF
   printf '%s' "${RESET}"
   # Centraliza o nome de usuário, mantém em cinza para contraste, com @leo_zmns em negrito
-  printf '\n%50s\n' "@leo_zmns" | sed "s/.*/${GRAY_LIGHT}${BOLD_OFF}&${RESET}/" | sed "s/@leo_zmns/${BOLD_ON}@leo_zmns${RESET}/"
+  printf '\n%50s\n' "@d0mingues1" | sed "s/.*/${GRAY_LIGHT}${BOLD_OFF}&${RESET}/" | sed "s/@leo_zmns/${BOLD_ON}@leo_zmns${RESET}/"
 
   # Linha horizontal em cinza escuro para finalizar o cabeçalho
   printf '%s\n' "${GRAY_DARK}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
